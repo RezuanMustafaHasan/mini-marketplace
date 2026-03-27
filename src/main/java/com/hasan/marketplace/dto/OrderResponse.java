@@ -25,4 +25,3 @@ public class OrderResponse {
     private BigDecimal totalAmount;
     private List<OrderItemResponse> items;
 }
-

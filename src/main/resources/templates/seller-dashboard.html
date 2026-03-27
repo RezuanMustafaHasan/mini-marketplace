@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Seller Dashboard</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body class="bg-light">
+<div th:replace="~{fragments/navbar :: navbar}"></div>
+
+<div class="container py-4">
+    <div class="mb-4">
+        <h1 class="mb-1">Seller Dashboard</h1>
+        <p class="text-muted mb-0">Quick access to your product listings and marketplace orders.</p>
+    </div>
+
+    <div class="row g-3 mb-4">
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <p class="text-muted small mb-2">Total Products</p>
+                    <h2 class="display-6 mb-0" th:text="${summary.totalProducts}">0</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="card shadow-sm border-0 h-100">
+                <div class="card-body">
+                    <p class="text-muted small mb-2">Seller Related Orders</p>
+                    <h2 class="display-6 mb-0" th:text="${summary.totalOrders}">0</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-md-4">
+            <a class="card shadow-sm border-0 text-decoration-none h-100" th:href="@{/seller/products}">
+                <div class="card-body">
+                    <h2 class="h5">Manage My Products</h2>
+                    <p class="text-muted mb-0">View, edit, and delete your listed products.</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-4">
+            <a class="card shadow-sm border-0 text-decoration-none h-100" th:href="@{/seller/orders}">
+                <div class="card-body">
+                    <h2 class="h5">View Seller Orders</h2>
+                    <p class="text-muted mb-0">Track orders that contain your products and update delivery status.</p>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-4">
+            <a class="card shadow-sm border-0 text-decoration-none h-100" th:href="@{/seller/products/new}">
+                <div class="card-body">
+                    <h2 class="h5">Add New Product</h2>
+                    <p class="text-muted mb-0">Create a new product and assign it to a predefined category.</p>
+                </div>
+            </a>
+        </div>
+    </div>
+</div>
+</body>
+</html>

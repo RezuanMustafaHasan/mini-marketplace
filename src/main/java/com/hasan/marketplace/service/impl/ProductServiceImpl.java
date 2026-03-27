@@ -2,28 +2,35 @@ package com.hasan.marketplace.service.impl;
 
 import com.hasan.marketplace.dto.ProductRequest;
 import com.hasan.marketplace.dto.ProductResponse;
+import com.hasan.marketplace.entity.Category;
 import com.hasan.marketplace.entity.Product;
 import com.hasan.marketplace.entity.User;
+import com.hasan.marketplace.exception.InvalidCategoryException;
 import com.hasan.marketplace.exception.ResourceNotFoundException;
 import com.hasan.marketplace.exception.UnauthorizedActionException;
+import com.hasan.marketplace.repository.CategoryRepository;
 import com.hasan.marketplace.repository.ProductRepository;
 import com.hasan.marketplace.repository.UserRepository;
 import com.hasan.marketplace.service.ProductService;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class ProductServiceImpl implements ProductService {
 
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
+    private final CategoryRepository categoryRepository;
 
     @Override
+    @Transactional
     public ProductResponse createProduct(ProductRequest request, Long sellerId) {
         User seller = getSellerById(sellerId);
+        Category category = getCategoryById(request.getCategoryId());
 
         Product product = new Product();
         product.setName(request.getName());
@@ -31,6 +38,7 @@ public class ProductServiceImpl implements ProductService {
         product.setPrice(request.getPrice());
         product.setStock(request.getStock());
         product.setImageUrl(request.getImageUrl());
+        product.setCategory(category);
         product.setSeller(seller);
 
         Product savedProduct = productRepository.save(product);
@@ -38,6 +46,7 @@ public class ProductServiceImpl implements ProductService {
     }
 
     @Override
+    @Transactional
     public ProductResponse updateProduct(Long productId, ProductRequest request, Long sellerId) {
         Product product = getProductByIdOrThrow(productId);
         validateOwnership(product, sellerId);
@@ -47,12 +56,14 @@ public class ProductServiceImpl implements ProductService {
         product.setPrice(request.getPrice());
         product.setStock(request.getStock());
         product.setImageUrl(request.getImageUrl());
+        product.setCategory(getCategoryById(request.getCategoryId()));
 
         Product updatedProduct = productRepository.save(product);
         return mapToProductResponse(updatedProduct);
     }
 
     @Override
+    @Transactional
     public void deleteProduct(Long productId, Long sellerId) {
         Product product = getProductByIdOrThrow(productId);
         validateOwnership(product, sellerId);
@@ -61,7 +72,13 @@ public class ProductServiceImpl implements ProductService {
 
     @Override
     public ProductResponse getProductById(Long productId) {
+        return mapToProductResponse(getProductByIdOrThrow(productId));
+    }
+
+    @Override
+    public ProductResponse getProductByIdForSeller(Long productId, Long sellerId) {
         Product product = getProductByIdOrThrow(productId);
+        validateOwnership(product, sellerId);
         return mapToProductResponse(product);
     }
 
@@ -70,35 +87,66 @@ public class ProductServiceImpl implements ProductService {
         return productRepository.findAll()
                 .stream()
                 .map(this::mapToProductResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
     public List<ProductResponse> getProductsBySeller(Long sellerId) {
-        return productRepository.findBySellerId(sellerId)
+        return productRepository.findBySellerIdOrderByIdDesc(sellerId)
                 .stream()
                 .map(this::mapToProductResponse)
-                .collect(Collectors.toList());
+                .toList();
     }
 
     @Override
-    public List<ProductResponse> searchProducts(String keyword) {
+    public List<ProductResponse> searchProducts(String keyword, Long categoryId) {
+        String normalizedKeyword = normalizeKeyword(keyword);
+        validateCategoryFilter(categoryId);
+
         List<Product> products;
 
-        if (keyword == null || keyword.isBlank()) {
-            products = productRepository.findAll();
+        if (normalizedKeyword == null && categoryId == null) {
+            products = productRepository.findAllByOrderByIdDesc();
+        } else if (normalizedKeyword == null) {
+            products = productRepository.findByCategoryIdOrderByIdDesc(categoryId);
+        } else if (categoryId == null) {
+            products = productRepository.findByNameContainingIgnoreCaseOrderByIdDesc(normalizedKeyword);
         } else {
-            products = productRepository.findByNameContainingIgnoreCase(keyword.trim());
+            products = productRepository.findByNameContainingIgnoreCaseAndCategoryIdOrderByIdDesc(
+                    normalizedKeyword,
+                    categoryId
+            );
         }
 
-        return products.stream()
+        return products
+                .stream()
                 .map(this::mapToProductResponse)
-                .collect(Collectors.toList());
+                .toList();
+    }
+
+    @Override
+    public long countProductsBySeller(Long sellerId) {
+        return productRepository.countBySellerId(sellerId);
     }
 
     private User getSellerById(Long sellerId) {
         return userRepository.findById(sellerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Seller not found with id: " + sellerId));
+    }
+
+    private Category getCategoryById(Long categoryId) {
+        if (categoryId == null) {
+            throw new InvalidCategoryException("Please select a valid category.");
+        }
+
+        return categoryRepository.findById(categoryId)
+                .orElseThrow(() -> new InvalidCategoryException("Selected category does not exist."));
+    }
+
+    private void validateCategoryFilter(Long categoryId) {
+        if (categoryId != null && categoryRepository.findById(categoryId).isEmpty()) {
+            throw new InvalidCategoryException("Selected category does not exist.");
+        }
     }
 
     private Product getProductByIdOrThrow(Long productId) {
@@ -108,8 +156,15 @@ public class ProductServiceImpl implements ProductService {
 
     private void validateOwnership(Product product, Long sellerId) {
         if (product.getSeller() == null || !product.getSeller().getId().equals(sellerId)) {
-            throw new UnauthorizedActionException("You are not allowed to modify this product");
+            throw new UnauthorizedActionException("You are not allowed to modify this product.");
         }
+    }
+
+    private String normalizeKeyword(String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            return null;
+        }
+        return keyword.trim();
     }
 
     private ProductResponse mapToProductResponse(Product product) {
@@ -121,6 +176,11 @@ public class ProductServiceImpl implements ProductService {
         response.setStock(product.getStock());
         response.setImageUrl(product.getImageUrl());
 
+        if (product.getCategory() != null) {
+            response.setCategoryId(product.getCategory().getId());
+            response.setCategoryName(product.getCategory().getName());
+        }
+
         if (product.getSeller() != null) {
             response.setSellerId(product.getSeller().getId());
             response.setSellerName(product.getSeller().getFullName());
@@ -129,4 +189,3 @@ public class ProductServiceImpl implements ProductService {
         return response;
     }
 }
-

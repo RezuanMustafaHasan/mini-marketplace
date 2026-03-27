@@ -10,7 +10,9 @@ import com.hasan.marketplace.entity.OrderStatus;
 import com.hasan.marketplace.entity.Product;
 import com.hasan.marketplace.entity.User;
 import com.hasan.marketplace.exception.InsufficientStockException;
+import com.hasan.marketplace.exception.InvalidOrderStateTransitionException;
 import com.hasan.marketplace.exception.ResourceNotFoundException;
+import com.hasan.marketplace.exception.UnauthorizedActionException;
 import com.hasan.marketplace.repository.CustomerOrderRepository;
 import com.hasan.marketplace.repository.ProductRepository;
 import com.hasan.marketplace.repository.UserRepository;
@@ -18,13 +20,13 @@ import com.hasan.marketplace.service.OrderService;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class OrderServiceImpl implements OrderService {
 
     private final CustomerOrderRepository customerOrderRepository;
@@ -48,9 +50,7 @@ public class OrderServiceImpl implements OrderService {
             Product product = getProductById(itemRequest.getProductId());
 
             if (itemRequest.getQuantity() > product.getStock()) {
-                throw new InsufficientStockException(
-                        "Insufficient stock for product: " + product.getName()
-                );
+                throw new InsufficientStockException("Insufficient stock for product: " + product.getName());
             }
 
             BigDecimal priceAtPurchase = product.getPrice();
@@ -72,41 +72,67 @@ public class OrderServiceImpl implements OrderService {
         order.setTotalAmount(totalAmount);
 
         CustomerOrder savedOrder = customerOrderRepository.save(order);
-        return mapToOrderResponse(savedOrder);
+        return mapToOrderResponse(savedOrder, null);
     }
 
     @Override
     public List<OrderResponse> getOrdersByBuyer(Long buyerId) {
-        return customerOrderRepository.findByBuyerId(buyerId)
+        return customerOrderRepository.findByBuyerIdOrderByOrderDateDesc(buyerId)
                 .stream()
-                .map(this::mapToOrderResponse)
-                .collect(Collectors.toList());
+                .map(order -> mapToOrderResponse(order, null))
+                .toList();
+    }
+
+    @Override
+    public OrderResponse getOrderForBuyer(Long orderId, Long buyerId) {
+        CustomerOrder order = getOrderByIdOrThrow(orderId);
+        validateBuyerOwnership(order, buyerId);
+        return mapToOrderResponse(order, null);
     }
 
     @Override
     public OrderResponse getOrderById(Long orderId) {
-        CustomerOrder order = getOrderByIdOrThrow(orderId);
-        return mapToOrderResponse(order);
+        return mapToOrderResponse(getOrderByIdOrThrow(orderId), null);
     }
 
     @Override
     public List<OrderResponse> getAllOrders() {
         return customerOrderRepository.findAll()
                 .stream()
-                .map(this::mapToOrderResponse)
-                .collect(Collectors.toList());
+                .map(order -> mapToOrderResponse(order, null))
+                .toList();
     }
 
     @Override
     public List<OrderResponse> getOrdersForSeller(Long sellerId) {
-        return customerOrderRepository.findAll()
+        return customerOrderRepository.findDistinctByItemsProductSellerIdOrderByOrderDateDesc(sellerId)
                 .stream()
-                .filter(order -> order.getItems().stream()
-                        .anyMatch(item -> item.getProduct() != null
-                                && item.getProduct().getSeller() != null
-                                && sellerId.equals(item.getProduct().getSeller().getId())))
-                .map(this::mapToOrderResponse)
-                .collect(Collectors.toList());
+                .map(order -> mapToOrderResponse(order, sellerId))
+                .toList();
+    }
+
+    @Override
+    public OrderResponse getOrderForSeller(Long orderId, Long sellerId) {
+        CustomerOrder order = getOrderByIdOrThrow(orderId);
+        validateSellerAccess(order, sellerId);
+        return mapToOrderResponse(order, sellerId);
+    }
+
+    @Override
+    @Transactional
+    public OrderResponse updateOrderStatusBySeller(Long orderId, Long sellerId, OrderStatus newStatus) {
+        CustomerOrder order = getOrderByIdOrThrow(orderId);
+        validateSellerAccess(order, sellerId);
+        validateSellerStatusTransition(order.getStatus(), newStatus);
+
+        order.setStatus(newStatus);
+        CustomerOrder updatedOrder = customerOrderRepository.save(order);
+        return mapToOrderResponse(updatedOrder, sellerId);
+    }
+
+    @Override
+    public long countOrdersForSeller(Long sellerId) {
+        return customerOrderRepository.countDistinctByItemsProductSellerId(sellerId);
     }
 
     private User getBuyerById(Long buyerId) {
@@ -124,6 +150,40 @@ public class OrderServiceImpl implements OrderService {
                 .orElseThrow(() -> new ResourceNotFoundException("Order not found with id: " + orderId));
     }
 
+    private void validateBuyerOwnership(CustomerOrder order, Long buyerId) {
+        if (order.getBuyer() == null || !buyerId.equals(order.getBuyer().getId())) {
+            throw new UnauthorizedActionException("You can only view your own orders.");
+        }
+    }
+
+    private void validateSellerAccess(CustomerOrder order, Long sellerId) {
+        boolean ownsAtLeastOneItem = order.getItems()
+                .stream()
+                .anyMatch(item -> item.getProduct() != null
+                        && item.getProduct().getSeller() != null
+                        && sellerId.equals(item.getProduct().getSeller().getId()));
+
+        if (!ownsAtLeastOneItem) {
+            throw new UnauthorizedActionException("You are not allowed to manage this order.");
+        }
+    }
+
+    private void validateSellerStatusTransition(OrderStatus currentStatus, OrderStatus newStatus) {
+        if (newStatus == null) {
+            throw new InvalidOrderStateTransitionException("Please select a valid order status.");
+        }
+
+        if (!currentStatus.canSellerTransitionTo(newStatus)) {
+            throw new InvalidOrderStateTransitionException(
+                    "Seller cannot change order status from "
+                            + currentStatus.getDisplayName()
+                            + " to "
+                            + newStatus.getDisplayName()
+                            + "."
+            );
+        }
+    }
+
     private OrderItemResponse mapToOrderItemResponse(OrderItem orderItem) {
         BigDecimal lineTotal = orderItem.getPriceAtPurchase()
                 .multiply(BigDecimal.valueOf(orderItem.getQuantity()));
@@ -137,10 +197,24 @@ public class OrderServiceImpl implements OrderService {
         return response;
     }
 
-    private OrderResponse mapToOrderResponse(CustomerOrder order) {
-        List<OrderItemResponse> items = order.getItems().stream()
+    private OrderResponse mapToOrderResponse(CustomerOrder order, Long sellerId) {
+        List<OrderItem> orderItems = order.getItems();
+
+        if (sellerId != null) {
+            orderItems = orderItems.stream()
+                    .filter(item -> item.getProduct() != null
+                            && item.getProduct().getSeller() != null
+                            && sellerId.equals(item.getProduct().getSeller().getId()))
+                    .toList();
+        }
+
+        List<OrderItemResponse> items = orderItems.stream()
                 .map(this::mapToOrderItemResponse)
-                .collect(Collectors.toList());
+                .toList();
+
+        BigDecimal totalAmount = items.stream()
+                .map(OrderItemResponse::getLineTotal)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         OrderResponse response = new OrderResponse();
         response.setId(order.getId());
@@ -148,9 +222,8 @@ public class OrderServiceImpl implements OrderService {
         response.setBuyerName(order.getBuyer().getFullName());
         response.setOrderDate(order.getOrderDate());
         response.setStatus(order.getStatus());
-        response.setTotalAmount(order.getTotalAmount());
+        response.setTotalAmount(sellerId == null ? order.getTotalAmount() : totalAmount);
         response.setItems(items);
         return response;
     }
 }
-

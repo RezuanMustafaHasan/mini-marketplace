@@ -3,14 +3,13 @@ package com.hasan.marketplace.controller;
 import com.hasan.marketplace.dto.OrderItemRequest;
 import com.hasan.marketplace.dto.OrderRequest;
 import com.hasan.marketplace.dto.ProductResponse;
+import com.hasan.marketplace.entity.RoleName;
 import com.hasan.marketplace.entity.User;
 import com.hasan.marketplace.service.OrderService;
 import com.hasan.marketplace.service.ProductService;
 import com.hasan.marketplace.service.UserService;
 import java.util.Collections;
 import lombok.RequiredArgsConstructor;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -45,27 +44,39 @@ public class OrderController {
         OrderRequest orderRequest = new OrderRequest();
         orderRequest.setItems(Collections.singletonList(itemRequest));
 
-        orderService.placeOrder(orderRequest, getCurrentUserId());
+        orderService.placeOrder(orderRequest, userService.getAuthenticatedUser().getId());
         return "redirect:/orders";
     }
 
     @GetMapping("/orders")
     public String showBuyerOrders(Model model) {
-        model.addAttribute("orders", orderService.getOrdersByBuyer(getCurrentUserId()));
+        User currentUser = userService.getAuthenticatedUser();
+
+        if (userService.hasRole(currentUser, RoleName.ADMIN)) {
+            model.addAttribute("orders", orderService.getAllOrders());
+            model.addAttribute("pageTitle", "All Orders");
+            model.addAttribute("backUrl", "/admin");
+            return "orders";
+        }
+
+        model.addAttribute("orders", orderService.getOrdersByBuyer(currentUser.getId()));
+        model.addAttribute("pageTitle", "My Orders");
+        model.addAttribute("backUrl", "/products");
         return "orders";
     }
 
     @GetMapping("/orders/{id}")
     public String showOrderDetails(@PathVariable Long id, Model model) {
-        model.addAttribute("order", orderService.getOrderById(id));
+        User currentUser = userService.getAuthenticatedUser();
+
+        if (userService.hasRole(currentUser, RoleName.ADMIN)) {
+            model.addAttribute("order", orderService.getOrderById(id));
+            model.addAttribute("backUrl", "/admin/orders");
+            return "order-details";
+        }
+
+        model.addAttribute("order", orderService.getOrderForBuyer(id, currentUser.getId()));
+        model.addAttribute("backUrl", "/orders");
         return "order-details";
     }
-
-    private Long getCurrentUserId() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        String email = authentication.getName();
-        User user = userService.findByEmail(email);
-        return user.getId();
-    }
 }
-
