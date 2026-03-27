@@ -3,10 +3,14 @@ package com.hasan.marketplace.controller;
 import com.hasan.marketplace.dto.OrderItemRequest;
 import com.hasan.marketplace.dto.OrderRequest;
 import com.hasan.marketplace.dto.ProductResponse;
+import com.hasan.marketplace.entity.User;
 import com.hasan.marketplace.service.OrderService;
 import com.hasan.marketplace.service.ProductService;
+import com.hasan.marketplace.service.UserService;
 import java.util.Collections;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -20,11 +24,9 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RequestMapping
 public class OrderController {
 
-    // TODO: Replace this temporary value with the logged-in buyer id from Spring Security.
-    private static final Long TEMP_BUYER_ID = 2L;
-
     private final ProductService productService;
     private final OrderService orderService;
+    private final UserService userService;
 
     @GetMapping("/checkout/{productId}")
     public String showCheckoutPage(@PathVariable Long productId, Model model) {
@@ -43,13 +45,13 @@ public class OrderController {
         OrderRequest orderRequest = new OrderRequest();
         orderRequest.setItems(Collections.singletonList(itemRequest));
 
-        orderService.placeOrder(orderRequest, TEMP_BUYER_ID);
+        orderService.placeOrder(orderRequest, getCurrentUserId());
         return "redirect:/orders";
     }
 
     @GetMapping("/orders")
     public String showBuyerOrders(Model model) {
-        model.addAttribute("orders", orderService.getOrdersByBuyer(TEMP_BUYER_ID));
+        model.addAttribute("orders", orderService.getOrdersByBuyer(getCurrentUserId()));
         return "orders";
     }
 
@@ -57,6 +59,13 @@ public class OrderController {
     public String showOrderDetails(@PathVariable Long id, Model model) {
         model.addAttribute("order", orderService.getOrderById(id));
         return "order-details";
+    }
+
+    private Long getCurrentUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        User user = userService.findByEmail(email);
+        return user.getId();
     }
 }
 
