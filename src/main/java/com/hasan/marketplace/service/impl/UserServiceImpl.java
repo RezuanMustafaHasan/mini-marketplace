@@ -2,13 +2,18 @@ package com.hasan.marketplace.service.impl;
 
 import com.hasan.marketplace.dto.UserRegistrationRequest;
 import com.hasan.marketplace.entity.Role;
+import com.hasan.marketplace.entity.RoleName;
 import com.hasan.marketplace.entity.User;
 import com.hasan.marketplace.exception.ResourceNotFoundException;
+import com.hasan.marketplace.exception.UnauthorizedActionException;
 import com.hasan.marketplace.repository.RoleRepository;
 import com.hasan.marketplace.repository.UserRepository;
 import com.hasan.marketplace.service.UserService;
 import java.util.HashSet;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -46,5 +51,22 @@ public class UserServiceImpl implements UserService {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
     }
-}
 
+    @Override
+    public User getAuthenticatedUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+
+        if (authentication == null
+                || !authentication.isAuthenticated()
+                || authentication instanceof AnonymousAuthenticationToken) {
+            throw new UnauthorizedActionException("Please login to continue.");
+        }
+
+        return findByEmail(authentication.getName());
+    }
+
+    @Override
+    public boolean hasRole(User user, RoleName roleName) {
+        return user.getRoles().stream().anyMatch(role -> role.getName() == roleName);
+    }
+}

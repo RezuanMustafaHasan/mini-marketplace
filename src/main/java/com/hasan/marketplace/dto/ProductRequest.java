@@ -34,7 +34,9 @@ public class ProductRequest {
     @Min(value = 0, message = "Stock cannot be negative")
     private Integer stock;
 
+    @NotNull(message = "Category is required")
+    private Long categoryId;
+
     @Size(max = 500, message = "Image URL must be at most 500 characters")
     private String imageUrl;
 }
-

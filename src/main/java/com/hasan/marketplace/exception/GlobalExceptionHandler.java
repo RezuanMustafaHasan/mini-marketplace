@@ -1,5 +1,6 @@
 package com.hasan.marketplace.exception;
 
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -28,6 +29,27 @@ public class GlobalExceptionHandler {
         return "error-page";
     }
 
+    @ExceptionHandler(InvalidCategoryException.class)
+    public String handleInvalidCategory(InvalidCategoryException ex, Model model) {
+        model.addAttribute("errorTitle", "Invalid Category");
+        model.addAttribute("errorMessage", ex.getMessage());
+        return "error-page";
+    }
+
+    @ExceptionHandler(InvalidOrderStateTransitionException.class)
+    public String handleInvalidOrderTransition(InvalidOrderStateTransitionException ex, Model model) {
+        model.addAttribute("errorTitle", "Invalid Order Status");
+        model.addAttribute("errorMessage", ex.getMessage());
+        return "error-page";
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public String handleAccessDenied(AccessDeniedException ex, Model model) {
+        model.addAttribute("errorTitle", "Access Denied");
+        model.addAttribute("errorMessage", "You do not have permission to access this page.");
+        return "error-page";
+    }
+
     @ExceptionHandler(IllegalArgumentException.class)
     public String handleIllegalArgument(IllegalArgumentException ex, Model model) {
         model.addAttribute("errorTitle", "Invalid Request");
@@ -42,4 +64,3 @@ public class GlobalExceptionHandler {
         return "error-page";
     }
 }
-
