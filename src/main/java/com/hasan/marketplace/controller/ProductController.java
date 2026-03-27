@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RequestMapping
 public class ProductController {
 
+    // TODO: Replace this temporary value with the logged-in seller id from Spring Security.
     private static final Long TEMP_SELLER_ID = 1L;
 
     private final ProductService productService;
