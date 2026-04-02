@@ -185,6 +185,37 @@ class OrderServiceImplTest {
     }
 
     @Test
+    void getOrderByIdReturnsMappedOrder() {
+        User buyer = buildUser(6L, "Buyer Six");
+        Product product = buildProduct(31L, "Standing Desk", new BigDecimal("249.99"), 3, buildUser(12L, "Seller"));
+        LocalDateTime orderDate = LocalDateTime.of(2026, 4, 3, 14, 45);
+        CustomerOrder order = buildOrder(
+                71L,
+                buyer,
+                orderDate,
+                OrderStatus.CONFIRMED,
+                new BigDecimal("249.99"),
+                buildOrderItem(product, 1, new BigDecimal("249.99"))
+        );
+        when(customerOrderRepository.findById(71L)).thenReturn(Optional.of(order));
+
+        OrderResponse response = orderService.getOrderById(71L);
+
+        assertEquals(71L, response.getId());
+        assertEquals(6L, response.getBuyerId());
+        assertEquals("Buyer Six", response.getBuyerName());
+        assertEquals(orderDate, response.getOrderDate());
+        assertEquals(OrderStatus.CONFIRMED, response.getStatus());
+        assertEquals(new BigDecimal("249.99"), response.getTotalAmount());
+        assertEquals(1, response.getItems().size());
+        assertEquals(31L, response.getItems().get(0).getProductId());
+        assertEquals("Standing Desk", response.getItems().get(0).getProductName());
+        assertEquals(1, response.getItems().get(0).getQuantity());
+        assertEquals(new BigDecimal("249.99"), response.getItems().get(0).getPriceAtPurchase());
+        assertEquals(new BigDecimal("249.99"), response.getItems().get(0).getLineTotal());
+    }
+
+    @Test
     void getOrderByIdThrowsWhenOrderDoesNotExist() {
         when(customerOrderRepository.findById(404L)).thenReturn(Optional.empty());
 
@@ -194,6 +225,44 @@ class OrderServiceImplTest {
         );
 
         assertEquals("Order not found with id: 404", exception.getMessage());
+    }
+
+    @Test
+    void getAllOrdersReturnsMappedOrders() {
+        User buyerOne = buildUser(7L, "Buyer Seven");
+        User buyerTwo = buildUser(8L, "Buyer Eight");
+        Product productOne = buildProduct(32L, "Laptop Stand", new BigDecimal("34.99"), 7, buildUser(13L, "Seller One"));
+        Product productTwo = buildProduct(33L, "USB Hub", new BigDecimal("19.99"), 10, buildUser(14L, "Seller Two"));
+        CustomerOrder firstOrder = buildOrder(
+                72L,
+                buyerOne,
+                LocalDateTime.of(2026, 4, 1, 16, 15),
+                OrderStatus.PENDING,
+                new BigDecimal("34.99"),
+                buildOrderItem(productOne, 1, new BigDecimal("34.99"))
+        );
+        CustomerOrder secondOrder = buildOrder(
+                73L,
+                buyerTwo,
+                LocalDateTime.of(2026, 4, 2, 8, 20),
+                OrderStatus.CANCELLED,
+                new BigDecimal("39.98"),
+                buildOrderItem(productTwo, 2, new BigDecimal("19.99"))
+        );
+        when(customerOrderRepository.findAll()).thenReturn(List.of(firstOrder, secondOrder));
+
+        List<OrderResponse> responses = orderService.getAllOrders();
+
+        assertEquals(2, responses.size());
+        assertEquals(72L, responses.get(0).getId());
+        assertEquals("Buyer Seven", responses.get(0).getBuyerName());
+        assertEquals(OrderStatus.PENDING, responses.get(0).getStatus());
+        assertEquals(new BigDecimal("34.99"), responses.get(0).getItems().get(0).getLineTotal());
+        assertEquals(73L, responses.get(1).getId());
+        assertEquals("Buyer Eight", responses.get(1).getBuyerName());
+        assertEquals(OrderStatus.CANCELLED, responses.get(1).getStatus());
+        assertEquals(2, responses.get(1).getItems().get(0).getQuantity());
+        assertEquals(new BigDecimal("39.98"), responses.get(1).getItems().get(0).getLineTotal());
     }
 
     @Test
@@ -226,6 +295,49 @@ class OrderServiceImplTest {
         assertEquals(1, responses.size());
         assertEquals(90L, responses.get(0).getId());
         assertEquals("Monitor", responses.get(0).getItems().get(0).getProductName());
+    }
+
+    @Test
+    void getOrdersForSellerIgnoresItemsWithoutProductOrSeller() {
+        User buyer = buildUser(2L, "Buyer Two");
+        User targetSeller = buildUser(15L, "Target Seller");
+        Product matchingProduct = buildProduct(42L, "Webcam", new BigDecimal("49.99"), 6, targetSeller);
+
+        OrderItem itemWithoutProduct = buildOrderItem(null, 1, new BigDecimal("10.00"));
+        Product productWithoutSeller = buildProduct(43L, "Unnamed Seller Product", new BigDecimal("15.00"), 4, null);
+        OrderItem itemWithoutSeller = buildOrderItem(productWithoutSeller, 1, new BigDecimal("15.00"));
+
+        CustomerOrder orderWithoutProduct = buildOrder(
+                92L,
+                buyer,
+                LocalDateTime.of(2026, 4, 2, 12, 0),
+                OrderStatus.PENDING,
+                new BigDecimal("10.00"),
+                itemWithoutProduct
+        );
+        CustomerOrder orderWithoutSeller = buildOrder(
+                93L,
+                buyer,
+                LocalDateTime.of(2026, 4, 2, 12, 30),
+                OrderStatus.PENDING,
+                new BigDecimal("15.00"),
+                itemWithoutSeller
+        );
+        CustomerOrder matchingOrder = buildOrder(
+                94L,
+                buyer,
+                LocalDateTime.of(2026, 4, 2, 13, 0),
+                OrderStatus.CONFIRMED,
+                new BigDecimal("49.99"),
+                buildOrderItem(matchingProduct, 1, new BigDecimal("49.99"))
+        );
+        when(customerOrderRepository.findAll()).thenReturn(List.of(orderWithoutProduct, orderWithoutSeller, matchingOrder));
+
+        List<OrderResponse> responses = orderService.getOrdersForSeller(15L);
+
+        assertEquals(1, responses.size());
+        assertEquals(94L, responses.get(0).getId());
+        assertEquals("Webcam", responses.get(0).getItems().get(0).getProductName());
     }
 
     private OrderItemRequest buildOrderItemRequest(Long productId, Integer quantity) {
