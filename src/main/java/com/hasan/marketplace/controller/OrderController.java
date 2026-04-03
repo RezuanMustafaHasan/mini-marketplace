@@ -3,6 +3,7 @@ package com.hasan.marketplace.controller;
 import com.hasan.marketplace.dto.OrderItemRequest;
 import com.hasan.marketplace.dto.OrderRequest;
 import com.hasan.marketplace.dto.ProductResponse;
+import com.hasan.marketplace.entity.RoleName;
 import com.hasan.marketplace.entity.User;
 import com.hasan.marketplace.service.OrderService;
 import com.hasan.marketplace.service.ProductService;
@@ -54,30 +55,63 @@ public class OrderController {
 
     @GetMapping("/orders")
     public String showBuyerOrders(Model model) {
+        User currentUser = getCurrentUser();
+
+        if (currentUser != null && hasRole(currentUser, RoleName.ADMIN)) {
+            model.addAttribute("orders", orderService.getAllOrders());
+            model.addAttribute("pageTitle", "All Orders");
+            model.addAttribute("backUrl", "/admin");
+            return "orders";
+        }
+
         model.addAttribute("orders", orderService.getOrdersByBuyer(getCurrentUserId()));
+        model.addAttribute("pageTitle", "My Orders");
+        model.addAttribute("backUrl", "/products");
         return "orders";
     }
 
     @GetMapping("/orders/{id}")
     public String showOrderDetails(@PathVariable Long id, Model model) {
-        model.addAttribute("order", orderService.getOrderById(id));
+        User currentUser = getCurrentUser();
+
+        if (currentUser != null && hasRole(currentUser, RoleName.ADMIN)) {
+            model.addAttribute("order", orderService.getOrderById(id));
+            model.addAttribute("backUrl", "/admin/orders");
+            return "order-details";
+        }
+
+        model.addAttribute("order", orderService.getOrderForBuyer(id, getCurrentUserId()));
+        model.addAttribute("backUrl", "/orders");
         return "order-details";
     }
 
     private Long getCurrentUserId() {
+        User user = getCurrentUser();
+        return user != null && user.getId() != null ? user.getId() : TEMP_BUYER_ID;
+    }
+
+    private User getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UserService userService = userServiceProvider.getIfAvailable();
 
         if (authentication == null || userService == null || !authentication.isAuthenticated()) {
-            return TEMP_BUYER_ID;
+            return null;
         }
 
         String email = authentication.getName();
         if (email == null || "anonymousUser".equals(email)) {
-            return TEMP_BUYER_ID;
+            return null;
         }
 
-        User user = userService.findByEmail(email);
-        return user != null && user.getId() != null ? user.getId() : TEMP_BUYER_ID;
+        try {
+            return userService.findByEmail(email);
+        } catch (RuntimeException exception) {
+            return null;
+        }
+    }
+
+    private boolean hasRole(User user, RoleName roleName) {
+        UserService userService = userServiceProvider.getIfAvailable();
+        return userService != null && userService.hasRole(user, roleName);
     }
 }

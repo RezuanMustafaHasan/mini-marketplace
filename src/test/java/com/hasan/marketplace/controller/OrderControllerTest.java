@@ -17,6 +17,7 @@ import com.hasan.marketplace.dto.OrderResponse;
 import com.hasan.marketplace.dto.ProductResponse;
 import com.hasan.marketplace.entity.OrderStatus;
 import com.hasan.marketplace.entity.User;
+import com.hasan.marketplace.service.CategoryService;
 import com.hasan.marketplace.service.OrderService;
 import com.hasan.marketplace.service.ProductService;
 import com.hasan.marketplace.service.UserService;
@@ -49,6 +50,9 @@ class OrderControllerTest {
 
     @MockitoBean
     private UserService userService;
+
+    @MockitoBean
+    private CategoryService categoryService;
 
     @Test
     void showCheckoutPageLoadsProductAndDefaultQuantity() throws Exception {
@@ -138,7 +142,7 @@ class OrderControllerTest {
                 .status(OrderStatus.CONFIRMED)
                 .totalAmount(new BigDecimal("199.99"))
                 .build();
-        when(orderService.getOrderById(44L)).thenReturn(order);
+        when(orderService.getOrderForBuyer(44L, 2L)).thenReturn(order);
 
         MvcResult result = mockMvc.perform(get("/orders/44"))
                 .andExpect(status().isOk())
@@ -148,6 +152,6 @@ class OrderControllerTest {
 
         OrderResponse modelOrder = (OrderResponse) result.getModelAndView().getModel().get("order");
         assertEquals(44L, modelOrder.getId());
-        verify(orderService).getOrderById(44L);
+        verify(orderService).getOrderForBuyer(44L, 2L);
     }
 }

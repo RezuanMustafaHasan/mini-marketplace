@@ -10,9 +10,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.hasan.marketplace.dto.OrderResponse;
 import com.hasan.marketplace.dto.ProductResponse;
+import com.hasan.marketplace.dto.UserResponse;
 import com.hasan.marketplace.entity.OrderStatus;
-import com.hasan.marketplace.entity.User;
 import com.hasan.marketplace.service.AdminService;
+import com.hasan.marketplace.service.CategoryService;
+import com.hasan.marketplace.service.UserService;
 import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -30,6 +32,12 @@ class AdminControllerTest {
     @MockitoBean
     private AdminService adminService;
 
+    @MockitoBean
+    private CategoryService categoryService;
+
+    @MockitoBean
+    private UserService userService;
+
     @Test
     void showAdminDashboardReturnsDashboardView() throws Exception {
         mockMvc.perform(get("/admin").with(user("admin").roles("ADMIN")))
@@ -40,7 +48,13 @@ class AdminControllerTest {
     @Test
     void showAllUsersAddsUsersToModel() throws Exception {
         when(adminService.getAllUsers()).thenReturn(List.of(
-                User.builder().id(1L).fullName("Admin User").email("admin@example.com").build()
+                UserResponse.builder()
+                        .id(1L)
+                        .fullName("Admin User")
+                        .email("admin@example.com")
+                        .enabled(true)
+                        .role("ADMIN")
+                        .build()
         ));
 
         mockMvc.perform(get("/admin/users").with(user("admin").roles("ADMIN")))

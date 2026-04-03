@@ -17,6 +17,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.hasan.marketplace.dto.ProductRequest;
 import com.hasan.marketplace.dto.ProductResponse;
 import com.hasan.marketplace.entity.User;
+import com.hasan.marketplace.service.CategoryService;
 import com.hasan.marketplace.service.ProductService;
 import com.hasan.marketplace.service.UserService;
 import java.math.BigDecimal;
@@ -39,11 +40,14 @@ class ProductControllerTest {
     private ProductService productService;
 
     @MockitoBean
+    private CategoryService categoryService;
+
+    @MockitoBean
     private UserService userService;
 
     @Test
     void showAllProductsUsesKeywordSearchAndReturnsProductsView() throws Exception {
-        when(productService.searchProducts("mouse")).thenReturn(List.of(
+        when(productService.searchProducts("mouse", null)).thenReturn(List.of(
                 ProductResponse.builder().id(1L).name("Mouse").build()
         ));
 
@@ -55,16 +59,19 @@ class ProductControllerTest {
                 .andExpect(model().attribute("keyword", "mouse"))
                 .andExpect(model().attributeExists("products"));
 
-        verify(productService).searchProducts("mouse");
+        verify(productService).searchProducts("mouse", null);
     }
 
     @Test
     void createProductWithInvalidInputReturnsFormWithoutCallingService() throws Exception {
+        when(categoryService.getAllCategories()).thenReturn(List.of());
+
         mockMvc.perform(post("/seller/products")
                         .with(user("seller"))
                         .with(csrf())
                         .param("name", "")
                         .param("description", "Missing required price")
+                        .param("categoryId", "1")
                         .param("stock", "5"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("product-form"))
@@ -84,6 +91,7 @@ class ProductControllerTest {
                         .param("description", "RGB keyboard")
                         .param("price", "129.99")
                         .param("stock", "12")
+                        .param("categoryId", "1")
                         .param("imageUrl", "https://cdn.example.com/keyboard.png"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/seller/products"));
@@ -96,6 +104,7 @@ class ProductControllerTest {
         assertEquals("RGB keyboard", capturedRequest.getDescription());
         assertEquals(new BigDecimal("129.99"), capturedRequest.getPrice());
         assertEquals(12, capturedRequest.getStock());
+        assertEquals(1L, capturedRequest.getCategoryId());
         assertEquals("https://cdn.example.com/keyboard.png", capturedRequest.getImageUrl());
     }
 
@@ -110,6 +119,7 @@ class ProductControllerTest {
                         .param("description", "RGB keyboard")
                         .param("price", "129.99")
                         .param("stock", "12")
+                        .param("categoryId", "1")
                         .param("imageUrl", "https://cdn.example.com/keyboard.png"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/seller/products"));
@@ -119,12 +129,14 @@ class ProductControllerTest {
 
     @Test
     void showEditFormPrepopulatesProductRequestModel() throws Exception {
-        when(productService.getProductById(3L)).thenReturn(ProductResponse.builder()
+        when(categoryService.getAllCategories()).thenReturn(List.of());
+        when(productService.getProductByIdForSeller(3L, 1L)).thenReturn(ProductResponse.builder()
                 .id(3L)
                 .name("Desk Lamp")
                 .description("Warm light")
                 .price(new BigDecimal("24.99"))
                 .stock(6)
+                .categoryId(4L)
                 .imageUrl("https://cdn.example.com/lamp.png")
                 .build());
 
@@ -141,6 +153,7 @@ class ProductControllerTest {
         assertEquals("Warm light", product.getDescription());
         assertEquals(new BigDecimal("24.99"), product.getPrice());
         assertEquals(6, product.getStock());
+        assertEquals(4L, product.getCategoryId());
         assertEquals("https://cdn.example.com/lamp.png", product.getImageUrl());
     }
 

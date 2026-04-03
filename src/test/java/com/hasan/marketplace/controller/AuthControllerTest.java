@@ -15,6 +15,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.hasan.marketplace.dto.UserRegistrationRequest;
 import com.hasan.marketplace.entity.RoleName;
+import com.hasan.marketplace.service.CategoryService;
 import com.hasan.marketplace.service.UserService;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -34,6 +35,9 @@ class AuthControllerTest {
 
     @MockitoBean
     private UserService userService;
+
+    @MockitoBean
+    private CategoryService categoryService;
 
     @Test
     void loginPageReturnsLoginView() throws Exception {

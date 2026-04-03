@@ -40,7 +40,7 @@ public class SecurityConfig {
                                 "/register",
                                 "/login",
                                 "/products",
-                                "/products/*",
+                                "/products/**",
                                 "/css/**",
                                 "/js/**",
                                 "/images/**"
@@ -64,6 +64,5 @@ public class SecurityConfig {
         return http.build();
     }
 }
-
 
 

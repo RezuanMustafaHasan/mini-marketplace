@@ -3,15 +3,20 @@ package com.hasan.marketplace.config;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.hasan.marketplace.entity.Category;
 import com.hasan.marketplace.entity.Role;
 import com.hasan.marketplace.entity.RoleName;
 import com.hasan.marketplace.entity.User;
+import com.hasan.marketplace.repository.CategoryRepository;
+import com.hasan.marketplace.repository.ProductRepository;
 import com.hasan.marketplace.repository.RoleRepository;
 import com.hasan.marketplace.repository.UserRepository;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,6 +25,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
 class DataInitializerTest {
@@ -31,6 +37,12 @@ class DataInitializerTest {
     private UserRepository userRepository;
 
     @Mock
+    private CategoryRepository categoryRepository;
+
+    @Mock
+    private ProductRepository productRepository;
+
+    @Mock
     private PasswordEncoder passwordEncoder;
 
     @InjectMocks
@@ -38,6 +50,9 @@ class DataInitializerTest {
 
     @Test
     void runCreatesMissingRolesAndDefaultAdminUser() {
+        setAdminCredentials();
+        stubCategoryInitialization();
+
         Role adminRole = Role.builder().id(1L).name(RoleName.ADMIN).build();
 
         when(roleRepository.existsByName(RoleName.ADMIN)).thenReturn(false);
@@ -68,6 +83,9 @@ class DataInitializerTest {
 
     @Test
     void runSkipsSavingExistingRolesAndAdmin() {
+        setAdminCredentials();
+        stubCategoryInitialization();
+
         when(roleRepository.existsByName(RoleName.ADMIN)).thenReturn(true);
         when(roleRepository.existsByName(RoleName.SELLER)).thenReturn(true);
         when(roleRepository.existsByName(RoleName.BUYER)).thenReturn(true);
@@ -79,5 +97,17 @@ class DataInitializerTest {
         verify(roleRepository, never()).findByName(RoleName.ADMIN);
         verify(userRepository, never()).save(any(User.class));
         verify(passwordEncoder, never()).encode(any());
+    }
+
+    private void setAdminCredentials() {
+        ReflectionTestUtils.setField(dataInitializer, "adminEmail", "admin@marketplace.com");
+        ReflectionTestUtils.setField(dataInitializer, "adminPassword", "admin123");
+    }
+
+    private void stubCategoryInitialization() {
+        when(categoryRepository.existsByNameIgnoreCase(anyString())).thenReturn(true);
+        when(categoryRepository.findByNameIgnoreCase("Accessories"))
+                .thenReturn(Optional.of(Category.builder().id(1L).name("Accessories").build()));
+        when(productRepository.findByCategoryIsNull()).thenReturn(List.of());
     }
 }

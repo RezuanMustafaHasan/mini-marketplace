@@ -169,7 +169,7 @@ class OrderServiceImplTest {
                 new BigDecimal("49.98"),
                 buildOrderItem(product, 2, new BigDecimal("24.99"))
         );
-        when(customerOrderRepository.findByBuyerId(5L)).thenReturn(List.of(order));
+        when(customerOrderRepository.findByBuyerIdOrderByOrderDateDesc(5L)).thenReturn(List.of(order));
 
         List<OrderResponse> responses = orderService.getOrdersByBuyer(5L);
 
@@ -288,7 +288,8 @@ class OrderServiceImplTest {
                 new BigDecimal("89.99"),
                 buildOrderItem(otherProduct, 1, new BigDecimal("89.99"))
         );
-        when(customerOrderRepository.findAll()).thenReturn(List.of(matchingOrder, nonMatchingOrder));
+        when(customerOrderRepository.findDistinctByItemsProductSellerIdOrderByOrderDateDesc(10L))
+                .thenReturn(List.of(matchingOrder));
 
         List<OrderResponse> responses = orderService.getOrdersForSeller(10L);
 
@@ -331,7 +332,8 @@ class OrderServiceImplTest {
                 new BigDecimal("49.99"),
                 buildOrderItem(matchingProduct, 1, new BigDecimal("49.99"))
         );
-        when(customerOrderRepository.findAll()).thenReturn(List.of(orderWithoutProduct, orderWithoutSeller, matchingOrder));
+        when(customerOrderRepository.findDistinctByItemsProductSellerIdOrderByOrderDateDesc(15L))
+                .thenReturn(List.of(matchingOrder));
 
         List<OrderResponse> responses = orderService.getOrdersForSeller(15L);
 

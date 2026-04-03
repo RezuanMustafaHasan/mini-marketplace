@@ -43,7 +43,10 @@ public class Product {
     private String imageUrl;
 
     @ManyToOne
+    @JoinColumn(name = "category_id")
+    private Category category;
+
+    @ManyToOne
     @JoinColumn(name = "seller_id", nullable = false)
     private User seller;
 }
-

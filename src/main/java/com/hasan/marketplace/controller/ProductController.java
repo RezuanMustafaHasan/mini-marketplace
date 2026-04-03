@@ -3,6 +3,7 @@ package com.hasan.marketplace.controller;
 import com.hasan.marketplace.dto.ProductRequest;
 import com.hasan.marketplace.dto.ProductResponse;
 import com.hasan.marketplace.entity.User;
+import com.hasan.marketplace.service.CategoryService;
 import com.hasan.marketplace.service.ProductService;
 import com.hasan.marketplace.service.UserService;
 import jakarta.validation.Valid;
@@ -28,12 +29,16 @@ public class ProductController {
     private static final Long TEMP_SELLER_ID = 1L;
 
     private final ProductService productService;
+    private final CategoryService categoryService;
     private final ObjectProvider<UserService> userServiceProvider;
 
     @GetMapping("/products")
-    public String showAllProducts(@RequestParam(required = false) String keyword, Model model) {
-        model.addAttribute("products", productService.searchProducts(keyword));
+    public String showAllProducts(@RequestParam(required = false) String keyword,
+                                  @RequestParam(required = false) Long category,
+                                  Model model) {
+        model.addAttribute("products", productService.searchProducts(keyword, category));
         model.addAttribute("keyword", keyword);
+        model.addAttribute("selectedCategoryId", category);
         return "products";
     }
 
@@ -52,8 +57,7 @@ public class ProductController {
     @GetMapping("/seller/products/new")
     public String showCreateForm(Model model) {
         model.addAttribute("product", new ProductRequest());
-        model.addAttribute("formTitle", "Add Product");
-        model.addAttribute("formAction", "/seller/products");
+        populateProductForm(model, "Add Product", "/seller/products");
         return "product-form";
     }
 
@@ -62,8 +66,7 @@ public class ProductController {
                                 BindingResult bindingResult,
                                 Model model) {
         if (bindingResult.hasErrors()) {
-            model.addAttribute("formTitle", "Add Product");
-            model.addAttribute("formAction", "/seller/products");
+            populateProductForm(model, "Add Product", "/seller/products");
             return "product-form";
         }
 
@@ -73,19 +76,19 @@ public class ProductController {
 
     @GetMapping("/seller/products/edit/{id}")
     public String showEditForm(@PathVariable Long id, Model model) {
-        ProductResponse productResponse = productService.getProductById(id);
+        ProductResponse productResponse = productService.getProductByIdForSeller(id, getCurrentUserId());
 
         ProductRequest productRequest = new ProductRequest();
         productRequest.setName(productResponse.getName());
         productRequest.setDescription(productResponse.getDescription());
         productRequest.setPrice(productResponse.getPrice());
         productRequest.setStock(productResponse.getStock());
+        productRequest.setCategoryId(productResponse.getCategoryId());
         productRequest.setImageUrl(productResponse.getImageUrl());
 
         model.addAttribute("product", productRequest);
         model.addAttribute("productId", id);
-        model.addAttribute("formTitle", "Edit Product");
-        model.addAttribute("formAction", "/seller/products/update/" + id);
+        populateProductForm(model, "Edit Product", "/seller/products/update/" + id);
         return "product-form";
     }
 
@@ -96,8 +99,7 @@ public class ProductController {
                                 Model model) {
         if (bindingResult.hasErrors()) {
             model.addAttribute("productId", id);
-            model.addAttribute("formTitle", "Edit Product");
-            model.addAttribute("formAction", "/seller/products/update/" + id);
+            populateProductForm(model, "Edit Product", "/seller/products/update/" + id);
             return "product-form";
         }
 
@@ -111,20 +113,34 @@ public class ProductController {
         return "redirect:/seller/products";
     }
 
+    private void populateProductForm(Model model, String formTitle, String formAction) {
+        model.addAttribute("formTitle", formTitle);
+        model.addAttribute("formAction", formAction);
+        model.addAttribute("availableCategories", categoryService.getAllCategories());
+    }
+
     private Long getCurrentUserId() {
+        User user = getCurrentUser();
+        return user != null && user.getId() != null ? user.getId() : TEMP_SELLER_ID;
+    }
+
+    private User getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         UserService userService = userServiceProvider.getIfAvailable();
 
         if (authentication == null || userService == null || !authentication.isAuthenticated()) {
-            return TEMP_SELLER_ID;
+            return null;
         }
 
         String email = authentication.getName();
         if (email == null || "anonymousUser".equals(email)) {
-            return TEMP_SELLER_ID;
+            return null;
         }
 
-        User user = userService.findByEmail(email);
-        return user != null && user.getId() != null ? user.getId() : TEMP_SELLER_ID;
+        try {
+            return userService.findByEmail(email);
+        } catch (RuntimeException exception) {
+            return null;
+        }
     }
 }

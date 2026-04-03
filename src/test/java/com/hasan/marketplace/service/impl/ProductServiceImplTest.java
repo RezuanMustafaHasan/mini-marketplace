@@ -9,8 +9,10 @@ import static org.mockito.Mockito.when;
 
 import com.hasan.marketplace.dto.ProductRequest;
 import com.hasan.marketplace.dto.ProductResponse;
+import com.hasan.marketplace.entity.Category;
 import com.hasan.marketplace.entity.Product;
 import com.hasan.marketplace.entity.User;
+import com.hasan.marketplace.repository.CategoryRepository;
 import com.hasan.marketplace.exception.ResourceNotFoundException;
 import com.hasan.marketplace.exception.UnauthorizedActionException;
 import com.hasan.marketplace.repository.ProductRepository;
@@ -34,6 +36,9 @@ class ProductServiceImplTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private CategoryRepository categoryRepository;
+
     @InjectMocks
     private ProductServiceImpl productService;
 
@@ -41,6 +46,7 @@ class ProductServiceImplTest {
     void createProductSavesNewProductAndMapsSellerDetails() {
         ProductRequest request = buildRequest("Wireless Mouse", "Reliable mouse", new BigDecimal("39.99"), 8);
         User seller = buildSeller(1L, "Hasan Seller");
+        Category category = buildCategory(1L, "Accessories");
         Product savedProduct = Product.builder()
                 .id(10L)
                 .name(request.getName())
@@ -48,10 +54,12 @@ class ProductServiceImplTest {
                 .price(request.getPrice())
                 .stock(request.getStock())
                 .imageUrl(request.getImageUrl())
+                .category(category)
                 .seller(seller)
                 .build();
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(seller));
+        when(categoryRepository.findById(1L)).thenReturn(Optional.of(category));
         when(productRepository.save(any(Product.class))).thenReturn(savedProduct);
 
         ProductResponse response = productService.createProduct(request, 1L);
@@ -65,9 +73,12 @@ class ProductServiceImplTest {
         assertEquals(new BigDecimal("39.99"), persistedProduct.getPrice());
         assertEquals(8, persistedProduct.getStock());
         assertEquals("https://cdn.example.com/image.png", persistedProduct.getImageUrl());
+        assertEquals(category, persistedProduct.getCategory());
         assertEquals(seller, persistedProduct.getSeller());
 
         assertEquals(10L, response.getId());
+        assertEquals(1L, response.getCategoryId());
+        assertEquals("Accessories", response.getCategoryName());
         assertEquals(1L, response.getSellerId());
         assertEquals("Hasan Seller", response.getSellerName());
     }
@@ -76,6 +87,7 @@ class ProductServiceImplTest {
     void updateProductUpdatesOwnedProduct() {
         ProductRequest request = buildRequest("Updated Name", "Updated description", new BigDecimal("99.99"), 3);
         User seller = buildSeller(7L, "Seller Seven");
+        Category category = buildCategory(1L, "Accessories");
         Product existingProduct = Product.builder()
                 .id(22L)
                 .name("Old Name")
@@ -87,6 +99,7 @@ class ProductServiceImplTest {
                 .build();
 
         when(productRepository.findById(22L)).thenReturn(Optional.of(existingProduct));
+        when(categoryRepository.findById(1L)).thenReturn(Optional.of(category));
         when(productRepository.save(existingProduct)).thenReturn(existingProduct);
 
         ProductResponse response = productService.updateProduct(22L, request, 7L);
@@ -97,6 +110,7 @@ class ProductServiceImplTest {
         assertEquals(new BigDecimal("99.99"), existingProduct.getPrice());
         assertEquals(3, existingProduct.getStock());
         assertEquals("https://cdn.example.com/image.png", existingProduct.getImageUrl());
+        assertEquals(category, existingProduct.getCategory());
         assertEquals(22L, response.getId());
         assertEquals(7L, response.getSellerId());
     }
@@ -127,7 +141,7 @@ class ProductServiceImplTest {
                 () -> productService.deleteProduct(15L, 1L)
         );
 
-        assertEquals("You are not allowed to modify this product", exception.getMessage());
+        assertEquals("You are not allowed to modify this product.", exception.getMessage());
         verify(productRepository, never()).delete(any(Product.class));
     }
 
@@ -140,6 +154,7 @@ class ProductServiceImplTest {
                 .price(new BigDecimal("899.99"))
                 .stock(4)
                 .imageUrl("https://cdn.example.com/laptop.png")
+                .category(buildCategory(2L, "Laptop"))
                 .seller(buildSeller(3L, "Laptop Seller"))
                 .build();
         when(productRepository.findById(5L)).thenReturn(Optional.of(product));
@@ -151,21 +166,23 @@ class ProductServiceImplTest {
         assertEquals(new BigDecimal("899.99"), response.getPrice());
         assertEquals(4, response.getStock());
         assertEquals("https://cdn.example.com/laptop.png", response.getImageUrl());
+        assertEquals(2L, response.getCategoryId());
+        assertEquals("Laptop", response.getCategoryName());
         assertEquals(3L, response.getSellerId());
         assertEquals("Laptop Seller", response.getSellerName());
     }
 
     @Test
     void searchProductsUsesFindAllWhenKeywordIsBlank() {
-        when(productRepository.findAll()).thenReturn(List.of(
+        when(productRepository.findAllByOrderByIdDesc()).thenReturn(List.of(
                 Product.builder().id(1L).name("Mouse").seller(buildSeller(1L, "Seller")).build(),
                 Product.builder().id(2L).name("Keyboard").seller(buildSeller(1L, "Seller")).build()
         ));
 
-        List<ProductResponse> responses = productService.searchProducts("   ");
+        List<ProductResponse> responses = productService.searchProducts("   ", null);
 
-        verify(productRepository).findAll();
-        verify(productRepository, never()).findByNameContainingIgnoreCase(any(String.class));
+        verify(productRepository).findAllByOrderByIdDesc();
+        verify(productRepository, never()).findByNameContainingIgnoreCaseOrderByIdDesc(any(String.class));
         assertEquals(2, responses.size());
     }
 
@@ -176,11 +193,11 @@ class ProductServiceImplTest {
                 .name("Phone Case")
                 .seller(buildSeller(8L, "Accessories Seller"))
                 .build();
-        when(productRepository.findByNameContainingIgnoreCase("phone")).thenReturn(List.of(product));
+        when(productRepository.findByNameContainingIgnoreCaseOrderByIdDesc("phone")).thenReturn(List.of(product));
 
-        List<ProductResponse> responses = productService.searchProducts("  phone  ");
+        List<ProductResponse> responses = productService.searchProducts("  phone  ", null);
 
-        verify(productRepository).findByNameContainingIgnoreCase("phone");
+        verify(productRepository).findByNameContainingIgnoreCaseOrderByIdDesc("phone");
         assertEquals(1, responses.size());
         assertEquals("Phone Case", responses.get(0).getName());
     }
@@ -191,7 +208,15 @@ class ProductServiceImplTest {
                 .description(description)
                 .price(price)
                 .stock(stock)
+                .categoryId(1L)
                 .imageUrl("https://cdn.example.com/image.png")
+                .build();
+    }
+
+    private Category buildCategory(Long id, String name) {
+        return Category.builder()
+                .id(id)
+                .name(name)
                 .build();
     }
 

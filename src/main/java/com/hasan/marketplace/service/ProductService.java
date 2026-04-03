@@ -14,10 +14,13 @@ public interface ProductService {
 
     ProductResponse getProductById(Long productId);
 
+    ProductResponse getProductByIdForSeller(Long productId, Long sellerId);
+
     List<ProductResponse> getAllProducts();
 
     List<ProductResponse> getProductsBySeller(Long sellerId);
 
-    List<ProductResponse> searchProducts(String keyword);
-}
+    List<ProductResponse> searchProducts(String keyword, Long categoryId);
 
+    long countProductsBySeller(Long sellerId);
+}
