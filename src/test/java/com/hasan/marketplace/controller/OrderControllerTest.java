@@ -1,6 +1,7 @@
 package com.hasan.marketplace.controller;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -15,8 +16,10 @@ import com.hasan.marketplace.dto.OrderRequest;
 import com.hasan.marketplace.dto.OrderResponse;
 import com.hasan.marketplace.dto.ProductResponse;
 import com.hasan.marketplace.entity.OrderStatus;
+import com.hasan.marketplace.entity.User;
 import com.hasan.marketplace.service.OrderService;
 import com.hasan.marketplace.service.ProductService;
+import com.hasan.marketplace.service.UserService;
 import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -24,6 +27,9 @@ import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -40,6 +46,9 @@ class OrderControllerTest {
 
     @MockitoBean
     private OrderService orderService;
+
+    @MockitoBean
+    private UserService userService;
 
     @Test
     void showCheckoutPageLoadsProductAndDefaultQuantity() throws Exception {
@@ -77,6 +86,32 @@ class OrderControllerTest {
         assertEquals(1, request.getItems().size());
         assertEquals(15L, request.getItems().get(0).getProductId());
         assertEquals(3, request.getItems().get(0).getQuantity());
+    }
+
+    @Test
+    void placeOrderUsesAuthenticatedBuyerIdWhenAvailable() throws Exception {
+        when(userService.findByEmail("buyer@example.com")).thenReturn(User.builder().id(77L).build());
+
+        SecurityContextHolder.getContext().setAuthentication(
+                UsernamePasswordAuthenticationToken.authenticated(
+                        "buyer@example.com",
+                        "password",
+                        List.of(new SimpleGrantedAuthority("ROLE_BUYER"))
+                )
+        );
+
+        try {
+            mockMvc.perform(post("/orders")
+                            .with(csrf())
+                            .param("productId", "15")
+                            .param("quantity", "3"))
+                    .andExpect(status().is3xxRedirection())
+                    .andExpect(redirectedUrl("/orders"));
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+
+        verify(orderService).placeOrder(any(OrderRequest.class), org.mockito.Mockito.eq(77L));
     }
 
     @Test
