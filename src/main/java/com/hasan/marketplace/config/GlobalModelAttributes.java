@@ -28,7 +28,17 @@ public class GlobalModelAttributes {
             return null;
         }
 
-        User user = userService.findByEmail(authentication.getName());
+        User user;
+        try {
+            user = userService.findByEmail(authentication.getName());
+        } catch (RuntimeException exception) {
+            return null;
+        }
+
+        if (user == null || user.getRoles() == null) {
+            return null;
+        }
+
         String primaryRole = user.getRoles()
                 .stream()
                 .map(role -> role.getName().name())

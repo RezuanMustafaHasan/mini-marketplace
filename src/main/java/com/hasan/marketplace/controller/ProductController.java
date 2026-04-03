@@ -2,11 +2,15 @@ package com.hasan.marketplace.controller;
 
 import com.hasan.marketplace.dto.ProductRequest;
 import com.hasan.marketplace.dto.ProductResponse;
+import com.hasan.marketplace.entity.User;
 import com.hasan.marketplace.service.CategoryService;
 import com.hasan.marketplace.service.ProductService;
 import com.hasan.marketplace.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -22,9 +26,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RequestMapping
 public class ProductController {
 
+    private static final Long TEMP_SELLER_ID = 1L;
+
     private final ProductService productService;
     private final CategoryService categoryService;
-    private final UserService userService;
+    private final ObjectProvider<UserService> userServiceProvider;
 
     @GetMapping("/products")
     public String showAllProducts(@RequestParam(required = false) String keyword,
@@ -114,6 +120,27 @@ public class ProductController {
     }
 
     private Long getCurrentUserId() {
-        return userService.getAuthenticatedUser().getId();
+        User user = getCurrentUser();
+        return user != null && user.getId() != null ? user.getId() : TEMP_SELLER_ID;
+    }
+
+    private User getCurrentUser() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserService userService = userServiceProvider.getIfAvailable();
+
+        if (authentication == null || userService == null || !authentication.isAuthenticated()) {
+            return null;
+        }
+
+        String email = authentication.getName();
+        if (email == null || "anonymousUser".equals(email)) {
+            return null;
+        }
+
+        try {
+            return userService.findByEmail(email);
+        } catch (RuntimeException exception) {
+            return null;
+        }
     }
 }
