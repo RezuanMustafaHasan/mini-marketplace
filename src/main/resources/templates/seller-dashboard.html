@@ -15,11 +15,12 @@
         <div>
             <span class="page-header__eyebrow">Seller workspace</span>
             <h1>Seller Dashboard</h1>
-            <p>Track your catalog and order activity from one clean control center.</p>
+            <p>Track your catalog and order activity from a calmer control center designed for faster inventory and fulfillment decisions.</p>
         </div>
     </div>
 
-    <div class="stats-grid mb-4">
+    <section class="dashboard-strip mb-4">
+        <div class="stats-grid">
         <section class="stat-card">
             <span class="stat-card__icon" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" width="22" height="22">
@@ -44,7 +45,8 @@
                 <h2 class="stat-card__value" th:text="${summary.totalOrders}">0</h2>
             </div>
         </section>
-    </div>
+        </div>
+    </section>
 
     <h2 class="section-title">Quick actions</h2>
     <div class="action-grid">

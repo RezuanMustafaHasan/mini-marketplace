@@ -11,33 +11,49 @@
 <div th:replace="~{fragments/navbar :: navbar}"></div>
 
 <div class="container page-shell">
+    <div class="page-header">
+        <div>
+            <span class="page-header__eyebrow">Checkout</span>
+            <h1>Confirm your order</h1>
+            <p>Review the selected product, choose quantity, and place your order with the same clean experience as the storefront.</p>
+        </div>
+        <a class="btn btn-outline-secondary" th:href="@{/products/{id}(id=${product.id})}">Back to Product</a>
+    </div>
+
     <div class="row g-4">
         <div class="col-lg-6">
-            <div class="card h-100">
-                <div class="card-body">
-                    <h1 class="h3 mb-3">Checkout</h1>
-                    <p class="text-muted">Review the product information before placing your order.</p>
-                    <hr>
-                    <h5 th:text="${product.name}">Product Name</h5>
-                    <span class="category-pill mb-3" th:text="${product.categoryName}">Category</span>
-                    <p class="text-muted mb-3"
+            <div class="info-panel h-100">
+                <h2 class="section-title mb-3">Order summary</h2>
+                <div class="stack-sm">
+                    <span class="category-pill" th:text="${product.categoryName}">Category</span>
+                    <h3 class="mb-0" th:text="${product.name}">Product Name</h3>
+                    <p class="product-summary__price mb-0" th:text="${product.price}">0.00</p>
+                    <p class="text-muted mb-2"
                        th:text="${product.description != null and !#strings.isEmpty(product.description) ? product.description : 'No description provided yet.'}">
                         Product Description
                     </p>
-                    <p class="mb-1"><strong>Price:</strong> <span th:text="${product.price}">0.00</span></p>
-                    <p class="mb-1"><strong>Stock:</strong> <span th:text="${product.stock}">0</span></p>
-                    <p class="mb-0"><strong>Seller:</strong> <span th:text="${product.sellerName}">Seller</span></p>
+                </div>
+
+                <div class="product-summary__meta mt-4">
+                    <div class="product-summary__meta-item">
+                        <p class="product-summary__meta-label">Stock</p>
+                        <p class="product-summary__meta-value"><span th:text="${product.stock}">0</span> units available</p>
+                    </div>
+                    <div class="product-summary__meta-item">
+                        <p class="product-summary__meta-label">Seller</p>
+                        <p class="product-summary__meta-value" th:text="${product.sellerName}">Seller</p>
+                    </div>
                 </div>
             </div>
         </div>
 
         <div class="col-lg-6">
-            <form th:action="@{/orders}" method="post" class="card">
-                <div class="card-body">
+            <div class="form-panel h-100">
+                <form th:action="@{/orders}" method="post">
                     <input type="hidden" name="productId" th:value="${product.id}">
                     <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
 
-                    <h2 class="h4 mb-3">Order Form</h2>
+                    <h2 class="section-title mb-3">Order form</h2>
 
                     <div class="mb-4">
                         <label for="quantity" class="form-label">Quantity</label>
@@ -49,8 +65,8 @@
                         <button class="btn btn-primary" type="submit">Place Order</button>
                         <a class="btn btn-secondary" th:href="@{/products/{id}(id=${product.id})}">Cancel</a>
                     </div>
-                </div>
-            </form>
+                </form>
+            </div>
         </div>
     </div>
 </div>

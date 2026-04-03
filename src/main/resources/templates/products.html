@@ -15,7 +15,7 @@
         <div>
             <span class="page-header__eyebrow">Electronics marketplace</span>
             <h1>Shop modern tech essentials</h1>
-            <p>Browse trusted devices and accessories from verified sellers in a cleaner, faster shopping experience.</p>
+            <p>Discover trusted devices and accessories in an image-first catalog with cleaner spacing, faster scanning, and a more premium buying experience.</p>
         </div>
         <a th:if="${currentUser != null and currentUser.role == 'SELLER'}"
            class="btn btn-outline-primary"
@@ -24,7 +24,7 @@
         </a>
     </div>
 
-    <section class="surface-card hero-panel mb-4">
+    <section class="section-soft mb-4">
         <div class="search-panel p-0">
             <form class="row g-2 align-items-end" method="get" th:action="@{/products}">
                 <input type="hidden" name="category" th:if="${selectedCategoryId != null}" th:value="${selectedCategoryId}">
@@ -68,6 +68,7 @@
 
     <div class="product-grid" th:if="${!#lists.isEmpty(products)}">
         <article class="product-card" th:each="product : ${products}">
+            <span class="product-card__badge" th:text="${product.stock > 0 ? 'Ready to ship' : 'Out of stock'}">Ready to ship</span>
             <div class="product-card__media" th:if="${product.imageUrl != null and !#strings.isEmpty(product.imageUrl)}">
                 <img th:src="${product.imageUrl}" th:alt="${product.name}" class="product-card__image">
             </div>
@@ -75,11 +76,27 @@
                 ElectroMart
             </div>
             <div class="product-card__body">
-                <span class="category-pill" th:text="${product.categoryName}">Category</span>
+                <div class="product-card__topline">
+                    <span class="category-pill" th:text="${product.categoryName}">Category</span>
+                    <p class="product-card__meta" th:text="${product.stock > 0 ? 'Available' : 'Unavailable'}">Available</p>
+                </div>
                 <h2 class="product-card__title" th:text="${product.name}">Product Name</h2>
-                <p class="product-card__price" th:text="${product.price}">0.00</p>
                 <p class="product-card__stock">In stock: <span th:text="${product.stock}">0</span></p>
-                <a class="btn btn-primary product-card__cta w-100" th:href="@{/products/{id}(id=${product.id})}">View</a>
+                <div class="product-card__price-row">
+                    <div>
+                        <p class="product-card__price" th:text="${product.price}">0.00</p>
+                        <p class="product-card__price-note">Current listing price</p>
+                    </div>
+                </div>
+                <div class="product-card__actions">
+                    <a class="btn btn-primary" th:href="@{/products/{id}(id=${product.id})}">View Details</a>
+                    <a th:if="${currentUser == null}" class="btn btn-outline-primary" th:href="@{/login}">Login</a>
+                    <a th:if="${currentUser != null and (currentUser.role == 'BUYER' or currentUser.role == 'ADMIN')}"
+                       class="btn btn-outline-primary"
+                       th:href="@{/checkout/{id}(id=${product.id})}">
+                        Buy Now
+                    </a>
+                </div>
             </div>
         </article>
     </div>

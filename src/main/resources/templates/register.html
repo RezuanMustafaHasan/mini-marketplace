@@ -11,54 +11,63 @@
 <div th:replace="~{fragments/navbar :: navbar}"></div>
 
 <div class="container page-shell">
-    <div class="row justify-content-center">
-        <div class="col-md-7 col-lg-6">
-            <div class="card auth-panel">
-                <div class="card-body p-4">
-                    <h1 class="h3 text-center mb-4">Create Account</h1>
+    <div class="auth-layout align-items-stretch">
+        <section class="auth-spotlight">
+            <span class="hero-showcase__eyebrow">Join ElectroMart</span>
+            <h2>Create your account and enter a cleaner marketplace experience.</h2>
+            <p>Register as a buyer, seller, or administrator and get the same modern interface across shopping, catalog management, and order workflows.</p>
+            <div class="trust-inline mt-4">
+                <span class="trust-pill">Buyer friendly</span>
+                <span class="trust-pill">Seller ready</span>
+                <span class="trust-pill">Admin capable</span>
+            </div>
+        </section>
 
-                    <form th:action="@{/register}" th:object="${user}" method="post">
-                        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
+        <div class="card auth-panel">
+            <div class="card-body p-4">
+                <h1 class="h3 text-center mb-4">Create Account</h1>
 
-                        <div class="mb-3">
-                            <label for="fullName" class="form-label">Full Name</label>
-                            <input id="fullName" type="text" th:field="*{fullName}" class="form-control"
-                                   th:classappend="${#fields.hasErrors('fullName')} ? 'is-invalid' : ''">
-                            <div class="invalid-feedback" th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}"></div>
-                        </div>
+                <form th:action="@{/register}" th:object="${user}" method="post">
+                    <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}">
 
-                        <div class="mb-3">
-                            <label for="email" class="form-label">Email</label>
-                            <input id="email" type="email" th:field="*{email}" class="form-control"
-                                   th:classappend="${#fields.hasErrors('email')} ? 'is-invalid' : ''">
-                            <div class="invalid-feedback" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
-                        </div>
+                    <div class="mb-3">
+                        <label for="fullName" class="form-label">Full Name</label>
+                        <input id="fullName" type="text" th:field="*{fullName}" class="form-control"
+                               th:classappend="${#fields.hasErrors('fullName')} ? 'is-invalid' : ''">
+                        <div class="invalid-feedback" th:if="${#fields.hasErrors('fullName')}" th:errors="*{fullName}"></div>
+                    </div>
 
-                        <div class="mb-3">
-                            <label for="password" class="form-label">Password</label>
-                            <input id="password" type="password" th:field="*{password}" class="form-control"
-                                   th:classappend="${#fields.hasErrors('password')} ? 'is-invalid' : ''">
-                            <div class="invalid-feedback" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
-                        </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">Email</label>
+                        <input id="email" type="email" th:field="*{email}" class="form-control"
+                               th:classappend="${#fields.hasErrors('email')} ? 'is-invalid' : ''">
+                        <div class="invalid-feedback" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></div>
+                    </div>
 
-                        <div class="mb-4">
-                            <label for="role" class="form-label">Role</label>
-                            <select id="role" th:field="*{role}" class="form-select"
-                                    th:classappend="${#fields.hasErrors('role')} ? 'is-invalid' : ''">
-                                <option value="">Select your role</option>
-                                <option th:each="role : ${availableRoles}" th:value="${role}" th:text="${role}"></option>
-                            </select>
-                            <div class="invalid-feedback" th:if="${#fields.hasErrors('role')}" th:errors="*{role}"></div>
-                        </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input id="password" type="password" th:field="*{password}" class="form-control"
+                               th:classappend="${#fields.hasErrors('password')} ? 'is-invalid' : ''">
+                        <div class="invalid-feedback" th:if="${#fields.hasErrors('password')}" th:errors="*{password}"></div>
+                    </div>
 
-                        <button type="submit" class="btn btn-primary w-100">Register</button>
-                    </form>
+                    <div class="mb-4">
+                        <label for="role" class="form-label">Role</label>
+                        <select id="role" th:field="*{role}" class="form-select"
+                                th:classappend="${#fields.hasErrors('role')} ? 'is-invalid' : ''">
+                            <option value="">Select your role</option>
+                            <option th:each="role : ${availableRoles}" th:value="${role}" th:text="${role}"></option>
+                        </select>
+                        <div class="invalid-feedback" th:if="${#fields.hasErrors('role')}" th:errors="*{role}"></div>
+                    </div>
 
-                    <p class="text-center mt-3 mb-0">
-                        Already have an account?
-                        <a th:href="@{/login}">Login here</a>
-                    </p>
-                </div>
+                    <button type="submit" class="btn btn-primary w-100">Register</button>
+                </form>
+
+                <p class="text-center mt-3 mb-0">
+                    Already have an account?
+                    <a th:href="@{/login}">Login here</a>
+                </p>
             </div>
         </div>
     </div>
