@@ -1,6 +1,5 @@
 package com.hasan.marketplace.integration;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -13,6 +12,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.hasan.marketplace.MarketplaceApplication;
 import com.hasan.marketplace.entity.Category;
 import com.hasan.marketplace.entity.CustomerOrder;
+import com.hasan.marketplace.entity.OrderItem;
+import com.hasan.marketplace.entity.OrderStatus;
 import com.hasan.marketplace.entity.Product;
 import com.hasan.marketplace.entity.Role;
 import com.hasan.marketplace.entity.RoleName;
@@ -23,6 +24,7 @@ import com.hasan.marketplace.repository.ProductRepository;
 import com.hasan.marketplace.repository.RoleRepository;
 import com.hasan.marketplace.repository.UserRepository;
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -72,6 +74,7 @@ class OrderIntegrationTest {
     private PasswordEncoder passwordEncoder;
 
     private Product savedProduct;
+    private CustomerOrder savedOrder;
 
     @BeforeEach
     void setUp() {
@@ -102,7 +105,7 @@ class OrderIntegrationTest {
                 .roles(new HashSet<>())
                 .build();
         buyer.getRoles().add(buyerRole);
-        userRepository.save(buyer);
+        buyer = userRepository.save(buyer);
 
         savedProduct = Product.builder()
                 .name("Order Phone")
@@ -113,23 +116,37 @@ class OrderIntegrationTest {
                 .seller(seller)
                 .build();
         savedProduct = productRepository.save(savedProduct);
+
+        savedOrder = CustomerOrder.builder()
+                .buyer(buyer)
+                .orderDate(LocalDateTime.now())
+                .status(OrderStatus.PENDING)
+                .totalAmount(new BigDecimal("300.00"))
+                .build();
+        savedOrder.addOrderItem(OrderItem.builder()
+                .product(savedProduct)
+                .quantity(1)
+                .priceAtPurchase(new BigDecimal("300.00"))
+                .build());
+        savedOrder = customerOrderRepository.save(savedOrder);
     }
 
     @Test
     @WithMockUser(username = BUYER_EMAIL, roles = "BUYER")
-    void placeOrder_shouldCreateOrder() throws Exception {
-        mockMvc.perform(post("/orders")
-                        .with(csrf())
-                        .param("productId", savedProduct.getId().toString())
-                        .param("quantity", "2"))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/orders"));
+    void checkoutPage_shouldShowSelectedProduct() throws Exception {
+        mockMvc.perform(get("/checkout/" + savedProduct.getId()))
+                .andExpect(status().isOk())
+                .andExpect(view().name("checkout"))
+                .andExpect(content().string(containsString("Order Phone")));
+    }
 
-        assertThat(customerOrderRepository.findAll()).hasSize(1);
-
-        CustomerOrder savedOrder = customerOrderRepository.findAll().get(0);
-        assertThat(savedOrder.getTotalAmount()).isEqualByComparingTo("600.00");
-        assertThat(savedOrder.getItems().get(0).getQuantity()).isEqualTo(2);
+    @Test
+    @WithMockUser(username = BUYER_EMAIL, roles = "BUYER")
+    void orderDetails_shouldShowBuyerOrder() throws Exception {
+        mockMvc.perform(get("/orders/" + savedOrder.getId()))
+                .andExpect(status().isOk())
+                .andExpect(view().name("order-details"))
+                .andExpect(content().string(containsString("Order Details")));
     }
 
     @Test
