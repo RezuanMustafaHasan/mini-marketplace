@@ -1,16 +1,18 @@
-package com.example.bazaar.integration;
+package com.hasan.marketplace.integration;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 import com.hasan.marketplace.MarketplaceApplication;
 import com.hasan.marketplace.entity.Category;
+import com.hasan.marketplace.entity.CustomerOrder;
 import com.hasan.marketplace.entity.Product;
 import com.hasan.marketplace.entity.Role;
 import com.hasan.marketplace.entity.RoleName;
@@ -27,6 +29,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -42,9 +45,10 @@ import org.springframework.test.web.servlet.MockMvc;
 )
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-class ProductIntegrationTest {
+class OrderIntegrationTest {
 
-    private static final String SELLER_EMAIL = "product-seller@test.com";
+    private static final String SELLER_EMAIL = "order-seller@test.com";
+    private static final String BUYER_EMAIL = "order-buyer@test.com";
 
     @Autowired
     private MockMvc mockMvc;
@@ -64,20 +68,24 @@ class ProductIntegrationTest {
     @Autowired
     private CustomerOrderRepository customerOrderRepository;
 
-    private Long categoryId;
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    private Product savedProduct;
 
     @BeforeEach
     void setUp() {
         customerOrderRepository.deleteAll();
         productRepository.deleteAll();
         userRepository.findByEmail(SELLER_EMAIL).ifPresent(userRepository::delete);
+        userRepository.findByEmail(BUYER_EMAIL).ifPresent(userRepository::delete);
 
         Role sellerRole = roleRepository.findByName(RoleName.SELLER).orElseThrow();
+        Role buyerRole = roleRepository.findByName(RoleName.BUYER).orElseThrow();
         Category phones = categoryRepository.findByNameIgnoreCase("Phones").orElseThrow();
-        categoryId = phones.getId();
 
         User seller = User.builder()
-                .fullName("Product Seller")
+                .fullName("Order Seller")
                 .email(SELLER_EMAIL)
                 .password("encoded-password")
                 .enabled(true)
@@ -86,46 +94,60 @@ class ProductIntegrationTest {
         seller.getRoles().add(sellerRole);
         seller = userRepository.save(seller);
 
-        Product product = Product.builder()
-                .name("Demo Phone")
-                .description("Simple test product")
-                .price(new BigDecimal("499.00"))
-                .stock(5)
+        User buyer = User.builder()
+                .fullName("Order Buyer")
+                .email(BUYER_EMAIL)
+                .password(passwordEncoder.encode("buyer123"))
+                .enabled(true)
+                .roles(new HashSet<>())
+                .build();
+        buyer.getRoles().add(buyerRole);
+        userRepository.save(buyer);
+
+        savedProduct = Product.builder()
+                .name("Order Phone")
+                .description("Product used for order integration tests")
+                .price(new BigDecimal("300.00"))
+                .stock(6)
                 .category(phones)
                 .seller(seller)
                 .build();
-        productRepository.save(product);
+        savedProduct = productRepository.save(savedProduct);
     }
 
     @Test
-    @WithMockUser(username = SELLER_EMAIL, roles = "SELLER")
-    void sellerProducts_shouldShowCurrentSellerProducts() throws Exception {
-        mockMvc.perform(get("/seller/products"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("seller-products"))
-                .andExpect(content().string(containsString("My Products")))
-                .andExpect(content().string(containsString("Demo Phone")));
-    }
-
-    @Test
-    @WithMockUser(username = SELLER_EMAIL, roles = "SELLER")
-    void createProduct_shouldShowValidationErrorForBlankName() throws Exception {
-        mockMvc.perform(post("/seller/products")
+    @WithMockUser(username = BUYER_EMAIL, roles = "BUYER")
+    void placeOrder_shouldCreateOrder() throws Exception {
+        mockMvc.perform(post("/orders")
                         .with(csrf())
-                        .param("name", "")
-                        .param("description", "Missing name")
-                        .param("price", "250.00")
-                        .param("stock", "3")
-                        .param("categoryId", String.valueOf(categoryId)))
-                .andExpect(status().isOk())
-                .andExpect(view().name("product-form"))
-                .andExpect(model().attributeHasFieldErrors("product", "name"));
+                        .param("productId", savedProduct.getId().toString())
+                        .param("quantity", "2"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/orders"));
+
+        assertThat(customerOrderRepository.findAll()).hasSize(1);
+
+        CustomerOrder savedOrder = customerOrderRepository.findAll().get(0);
+        assertThat(savedOrder.getTotalAmount()).isEqualByComparingTo("600.00");
+        assertThat(savedOrder.getItems().get(0).getQuantity()).isEqualTo(2);
     }
 
     @Test
-    @WithMockUser(username = "buyer@test.com", roles = "BUYER")
-    void sellerProducts_shouldRejectBuyerRole() throws Exception {
-        mockMvc.perform(get("/seller/products"))
+    @WithMockUser(username = BUYER_EMAIL, roles = "BUYER")
+    void placeOrder_shouldShowErrorWhenProductDoesNotExist() throws Exception {
+        mockMvc.perform(post("/orders")
+                        .with(csrf())
+                        .param("productId", "99999")
+                        .param("quantity", "1"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("error-page"))
+                .andExpect(content().string(containsString("Product not found")));
+    }
+
+    @Test
+    @WithMockUser(username = SELLER_EMAIL, roles = "SELLER")
+    void orders_shouldRejectSellerRole() throws Exception {
+        mockMvc.perform(get("/orders"))
                 .andExpect(status().isForbidden());
     }
 }

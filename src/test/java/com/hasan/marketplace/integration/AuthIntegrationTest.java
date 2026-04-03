@@ -1,4 +1,4 @@
-package com.example.bazaar.integration;
+package com.hasan.marketplace.integration;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestBuilders.formLogin;
