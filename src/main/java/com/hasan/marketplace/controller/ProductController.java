@@ -2,9 +2,14 @@ package com.hasan.marketplace.controller;
 
 import com.hasan.marketplace.dto.ProductRequest;
 import com.hasan.marketplace.dto.ProductResponse;
+import com.hasan.marketplace.entity.User;
 import com.hasan.marketplace.service.ProductService;
+import com.hasan.marketplace.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -20,10 +25,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RequestMapping
 public class ProductController {
 
-    // TODO: Replace this temporary value with the logged-in seller id from Spring Security.
     private static final Long TEMP_SELLER_ID = 1L;
 
     private final ProductService productService;
+    private final ObjectProvider<UserService> userServiceProvider;
 
     @GetMapping("/products")
     public String showAllProducts(@RequestParam(required = false) String keyword, Model model) {
@@ -40,7 +45,7 @@ public class ProductController {
 
     @GetMapping("/seller/products")
     public String showSellerProducts(Model model) {
-        model.addAttribute("products", productService.getProductsBySeller(TEMP_SELLER_ID));
+        model.addAttribute("products", productService.getProductsBySeller(getCurrentUserId()));
         return "seller-products";
     }
 
@@ -62,7 +67,7 @@ public class ProductController {
             return "product-form";
         }
 
-        productService.createProduct(productRequest, TEMP_SELLER_ID);
+        productService.createProduct(productRequest, getCurrentUserId());
         return "redirect:/seller/products";
     }
 
@@ -96,14 +101,30 @@ public class ProductController {
             return "product-form";
         }
 
-        productService.updateProduct(id, productRequest, TEMP_SELLER_ID);
+        productService.updateProduct(id, productRequest, getCurrentUserId());
         return "redirect:/seller/products";
     }
 
     @PostMapping("/seller/products/delete/{id}")
     public String deleteProduct(@PathVariable Long id) {
-        productService.deleteProduct(id, TEMP_SELLER_ID);
+        productService.deleteProduct(id, getCurrentUserId());
         return "redirect:/seller/products";
     }
-}
 
+    private Long getCurrentUserId() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserService userService = userServiceProvider.getIfAvailable();
+
+        if (authentication == null || userService == null || !authentication.isAuthenticated()) {
+            return TEMP_SELLER_ID;
+        }
+
+        String email = authentication.getName();
+        if (email == null || "anonymousUser".equals(email)) {
+            return TEMP_SELLER_ID;
+        }
+
+        User user = userService.findByEmail(email);
+        return user != null && user.getId() != null ? user.getId() : TEMP_SELLER_ID;
+    }
+}
