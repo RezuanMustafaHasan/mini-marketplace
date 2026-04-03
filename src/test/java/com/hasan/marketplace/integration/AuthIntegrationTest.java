@@ -1,27 +1,23 @@
 package com.hasan.marketplace.integration;
 
 import static org.hamcrest.Matchers.containsString;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestBuilders.formLogin;
-import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.authenticated;
-import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.unauthenticated;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 import com.hasan.marketplace.MarketplaceApplication;
-import com.hasan.marketplace.entity.Role;
 import com.hasan.marketplace.entity.RoleName;
-import com.hasan.marketplace.entity.User;
-import com.hasan.marketplace.repository.RoleRepository;
 import com.hasan.marketplace.repository.UserRepository;
-import java.util.HashSet;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -38,8 +34,7 @@ import org.springframework.test.web.servlet.MockMvc;
 @ActiveProfiles("test")
 class AuthIntegrationTest {
 
-    private static final String BUYER_EMAIL = "auth-buyer@test.com";
-    private static final String BUYER_PASSWORD = "buyer123";
+    private static final String REGISTER_EMAIL = "new-buyer@test.com";
 
     @Autowired
     private MockMvc mockMvc;
@@ -47,50 +42,51 @@ class AuthIntegrationTest {
     @Autowired
     private UserRepository userRepository;
 
-    @Autowired
-    private RoleRepository roleRepository;
-
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
     @BeforeEach
     void setUp() {
-        userRepository.findByEmail(BUYER_EMAIL).ifPresent(userRepository::delete);
-
-        Role buyerRole = roleRepository.findByName(RoleName.BUYER).orElseThrow();
-
-        User buyer = User.builder()
-                .fullName("Auth Buyer")
-                .email(BUYER_EMAIL)
-                .password(passwordEncoder.encode(BUYER_PASSWORD))
-                .enabled(true)
-                .roles(new HashSet<>())
-                .build();
-        buyer.getRoles().add(buyerRole);
-        userRepository.save(buyer);
+        userRepository.findByEmail(REGISTER_EMAIL).ifPresent(userRepository::delete);
     }
 
     @Test
     void loginPage_shouldLoad() throws Exception {
         mockMvc.perform(get("/login"))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("Login")))
-                .andExpect(content().string(containsString("Email")));
+                .andExpect(view().name("login"))
+                .andExpect(content().string(containsString("Login")));
     }
 
     @Test
-    void login_shouldSucceedWithValidCredentials() throws Exception {
-        mockMvc.perform(formLogin("/login").user("email", BUYER_EMAIL).password(BUYER_PASSWORD))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/products"))
-                .andExpect(authenticated().withUsername(BUYER_EMAIL));
+    void registerPage_shouldLoadForm() throws Exception {
+        mockMvc.perform(get("/register"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("register"))
+                .andExpect(model().attributeExists("user", "availableRoles"));
     }
 
     @Test
-    void login_shouldFailWithWrongPassword() throws Exception {
-        mockMvc.perform(formLogin("/login").user("email", BUYER_EMAIL).password("wrongpass"))
+    void register_shouldCreateUserAndRedirectToLogin() throws Exception {
+        mockMvc.perform(post("/register")
+                        .with(csrf())
+                        .param("fullName", "New Buyer")
+                        .param("email", REGISTER_EMAIL)
+                        .param("password", "secret123")
+                        .param("role", RoleName.BUYER.name()))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/login?error"))
-                .andExpect(unauthenticated());
+                .andExpect(redirectedUrl("/login?registered"));
+
+        org.assertj.core.api.Assertions.assertThat(userRepository.existsByEmail(REGISTER_EMAIL)).isTrue();
+    }
+
+    @Test
+    void register_shouldReturnFormWhenInputIsInvalid() throws Exception {
+        mockMvc.perform(post("/register")
+                        .with(csrf())
+                        .param("fullName", "")
+                        .param("email", "wrong-email")
+                        .param("password", "123")
+                        .param("role", RoleName.BUYER.name()))
+                .andExpect(status().isOk())
+                .andExpect(view().name("register"))
+                .andExpect(model().attributeHasFieldErrors("user", "fullName", "email", "password"));
     }
 }

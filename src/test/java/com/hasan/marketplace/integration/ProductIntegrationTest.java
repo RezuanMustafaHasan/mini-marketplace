@@ -15,8 +15,8 @@ import com.hasan.marketplace.entity.Product;
 import com.hasan.marketplace.entity.Role;
 import com.hasan.marketplace.entity.RoleName;
 import com.hasan.marketplace.entity.User;
-import com.hasan.marketplace.repository.CategoryRepository;
 import com.hasan.marketplace.repository.CustomerOrderRepository;
+import com.hasan.marketplace.repository.CategoryRepository;
 import com.hasan.marketplace.repository.ProductRepository;
 import com.hasan.marketplace.repository.RoleRepository;
 import com.hasan.marketplace.repository.UserRepository;
@@ -65,6 +65,7 @@ class ProductIntegrationTest {
     private CustomerOrderRepository customerOrderRepository;
 
     private Long categoryId;
+    private Long productId;
 
     @BeforeEach
     void setUp() {
@@ -94,16 +95,23 @@ class ProductIntegrationTest {
                 .category(phones)
                 .seller(seller)
                 .build();
-        productRepository.save(product);
+        product = productRepository.save(product);
+        productId = product.getId();
     }
 
     @Test
-    @WithMockUser(username = SELLER_EMAIL, roles = "SELLER")
-    void sellerProducts_shouldShowCurrentSellerProducts() throws Exception {
-        mockMvc.perform(get("/seller/products"))
+    void productsPage_shouldShowProducts() throws Exception {
+        mockMvc.perform(get("/products"))
                 .andExpect(status().isOk())
-                .andExpect(view().name("seller-products"))
-                .andExpect(content().string(containsString("My Products")))
+                .andExpect(view().name("products"))
+                .andExpect(content().string(containsString("Demo Phone")));
+    }
+
+    @Test
+    void productDetails_shouldShowSelectedProduct() throws Exception {
+        mockMvc.perform(get("/products/" + productId))
+                .andExpect(status().isOk())
+                .andExpect(view().name("product-details"))
                 .andExpect(content().string(containsString("Demo Phone")));
     }
 
