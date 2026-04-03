@@ -5,24 +5,32 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Seller Orders</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
 </head>
-<body class="bg-light">
+<body class="app-body">
 <div th:replace="~{fragments/navbar :: navbar}"></div>
 
-<div class="container py-4">
-    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+<div class="container page-shell">
+    <div class="page-header">
         <div>
-            <h1 class="mb-1">Seller Orders</h1>
-            <p class="text-muted mb-0">Only orders that contain your own products are listed here.</p>
+            <span class="page-header__eyebrow">Order management</span>
+            <h1>Seller Orders</h1>
+            <p>Track only the orders that include your products and keep delivery status moving.</p>
         </div>
         <a class="btn btn-outline-secondary" th:href="@{/seller/dashboard}">Back to Dashboard</a>
     </div>
 
-    <div class="card shadow-sm border-0" th:if="${!#lists.isEmpty(orders)}">
+    <div class="table-shell" th:if="${!#lists.isEmpty(orders)}">
+        <div class="table-shell__header">
+            <div>
+                <h2 class="section-title mb-0">Order queue</h2>
+                <p>Recent order activity tied to your listings.</p>
+            </div>
+        </div>
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
+                <table class="table app-table align-middle mb-0">
+                    <thead>
                     <tr>
                         <th>Order ID</th>
                         <th>Buyer</th>
@@ -37,10 +45,19 @@
                         <td th:text="${order.id}">1</td>
                         <td th:text="${order.buyerName}">Buyer Name</td>
                         <td th:text="${#temporals.format(order.orderDate, 'yyyy-MM-dd HH:mm')}">2026-03-27 10:00</td>
-                        <td th:text="${order.status.displayName}">PENDING</td>
+                        <td>
+                            <span class="status-badge"
+                                  th:classappend="${order.status.name() == 'PENDING'} ? ' status-pending' :
+                                                  (${order.status.name() == 'CONFIRMED'} ? ' status-confirmed' :
+                                                  (${order.status.name() == 'OUT_FOR_DELIVERY'} ? ' status-out-for-delivery' :
+                                                  (${order.status.name() == 'DELIVERED'} ? ' status-delivered' : ' status-cancelled')))"
+                                  th:text="${order.status.displayName}">
+                                PENDING
+                            </span>
+                        </td>
                         <td th:text="${order.totalAmount}">0.00</td>
                         <td>
-                            <a class="btn btn-sm btn-outline-primary" th:href="@{/seller/orders/{id}(id=${order.id})}">Details</a>
+                            <a class="btn btn-sm btn-primary" th:href="@{/seller/orders/{id}(id=${order.id})}">View</a>
                         </td>
                     </tr>
                     </tbody>
@@ -49,7 +66,7 @@
         </div>
     </div>
 
-    <div class="alert alert-info shadow-sm border-0" th:if="${#lists.isEmpty(orders)}">
+    <div class="alert empty-state" th:if="${#lists.isEmpty(orders)}">
         No seller-related orders found yet.
     </div>
 </div>
