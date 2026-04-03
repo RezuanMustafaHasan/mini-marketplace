@@ -5,21 +5,26 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Admin Users</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
 </head>
-<body class="bg-light">
+<body class="app-body">
 <div th:replace="~{fragments/navbar :: navbar}"></div>
 
-<div class="container py-4">
-    <div class="d-flex justify-content-between align-items-center mb-4">
-        <h1 class="mb-0">All Users</h1>
+<div class="container page-shell">
+    <div class="page-header">
+        <div>
+            <span class="page-header__eyebrow">Admin users</span>
+            <h1>All Users</h1>
+            <p>Review registered marketplace accounts and access roles.</p>
+        </div>
         <a class="btn btn-outline-secondary" th:href="@{/admin}">Back to Dashboard</a>
     </div>
 
-    <div class="card shadow-sm border-0">
+    <div class="table-shell">
         <div class="card-body p-0">
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0">
-                    <thead class="table-light">
+                <table class="table app-table align-middle mb-0">
+                    <thead>
                     <tr>
                         <th>ID</th>
                         <th>Full Name</th>
@@ -33,8 +38,8 @@
                         <td th:text="${user.id}">1</td>
                         <td th:text="${user.fullName}">User Name</td>
                         <td th:text="${user.email}">user@email.com</td>
-                        <td th:text="${user.role}">BUYER</td>
-                        <td th:text="${user.enabled ? 'Yes' : 'No'}">Yes</td>
+                        <td><span class="category-pill" th:text="${user.role}">BUYER</span></td>
+                        <td><span class="table-meta" th:text="${user.enabled ? 'Enabled' : 'Disabled'}">Enabled</span></td>
                     </tr>
                     </tbody>
                 </table>

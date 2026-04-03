@@ -5,15 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Products</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" th:href="@{/css/app.css}">
 </head>
-<body class="bg-light">
+<body class="app-body">
 <div th:replace="~{fragments/navbar :: navbar}"></div>
 
-<div class="container py-4">
-    <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-3 mb-4">
+<div class="container page-shell">
+    <div class="page-header">
         <div>
-            <h1 class="mb-1">Electronic Marketplace</h1>
-            <p class="text-muted mb-0">Browse electronic products from trusted marketplace sellers.</p>
+            <span class="page-header__eyebrow">Electronics marketplace</span>
+            <h1>Shop modern tech essentials</h1>
+            <p>Browse trusted devices and accessories from verified sellers in a cleaner, faster shopping experience.</p>
         </div>
         <a th:if="${currentUser != null and currentUser.role == 'SELLER'}"
            class="btn btn-outline-primary"
@@ -22,31 +24,39 @@
         </a>
     </div>
 
-    <div class="card shadow-sm border-0 mb-4">
-        <div class="card-body">
+    <section class="surface-card hero-panel mb-4">
+        <div class="search-panel p-0">
             <form class="row g-2 align-items-end" method="get" th:action="@{/products}">
                 <input type="hidden" name="category" th:if="${selectedCategoryId != null}" th:value="${selectedCategoryId}">
-                <div class="col-md-9">
-                    <label class="form-label" for="keyword">Search products</label>
-                    <input id="keyword" class="form-control" type="text" name="keyword" th:value="${keyword}"
-                           placeholder="Search by product name">
+                <div class="col-lg-9">
+                    <label class="form-label fw-semibold" for="keyword">Search products</label>
+                    <div class="search-input">
+                        <span class="search-input__icon" aria-hidden="true">
+                            <svg viewBox="0 0 20 20" fill="none" width="18" height="18">
+                                <path d="M8.75 15.5a6.75 6.75 0 1 1 0-13.5 6.75 6.75 0 0 1 0 13.5Z" stroke="currentColor" stroke-width="1.7"/>
+                                <path d="m13.5 13.5 4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                            </svg>
+                        </span>
+                        <input id="keyword" class="form-control search-input__control" type="text" name="keyword" th:value="${keyword}"
+                               placeholder="Search by product name">
+                    </div>
                 </div>
-                <div class="col-md-3 d-grid">
+                <div class="col-lg-3 d-grid">
                     <button class="btn btn-primary" type="submit">Search</button>
                 </div>
             </form>
 
             <div class="mt-4">
-                <p class="fw-semibold mb-2">Browse by category</p>
-                <div class="d-flex flex-wrap gap-2">
-                    <a class="btn btn-sm"
-                       th:classappend="${selectedCategoryId == null} ? 'btn-dark' : 'btn-outline-dark'"
+                <p class="fw-semibold mb-3">Browse by category</p>
+                <div class="filter-bar">
+                    <a class="filter-pill"
+                       th:classappend="${selectedCategoryId == null} ? ' is-active' : ''"
                        th:href="@{/products(keyword=${keyword})}">
                         All Products
                     </a>
                     <a th:each="category : ${navbarCategories}"
-                       class="btn btn-sm"
-                       th:classappend="${selectedCategoryId == category.id} ? 'btn-dark' : 'btn-outline-dark'"
+                       class="filter-pill"
+                       th:classappend="${selectedCategoryId == category.id} ? ' is-active' : ''"
                        th:href="@{/products(keyword=${keyword}, category=${category.id})}"
                        th:text="${category.name}">
                         Category
@@ -54,34 +64,27 @@
                 </div>
             </div>
         </div>
-    </div>
+    </section>
 
-    <div class="row g-3" th:if="${!#lists.isEmpty(products)}">
-        <div class="col-md-6 col-xl-4" th:each="product : ${products}">
-            <div class="card h-100 shadow-sm border-0">
-                <div class="card-body d-flex flex-column">
-                    <div class="d-flex justify-content-between align-items-start gap-2 mb-3">
-                        <h5 class="card-title mb-0" th:text="${product.name}">Product Name</h5>
-                        <span class="badge text-bg-secondary" th:text="${product.categoryName}">Category</span>
-                    </div>
-                    <p class="card-text text-muted small mb-3"
-                       th:text="${product.description != null and !#strings.isEmpty(product.description) ? product.description : 'No description provided yet.'}">
-                        Description
-                    </p>
-                    <div class="mt-auto">
-                        <p class="mb-1"><strong>Price:</strong> <span th:text="${product.price}">0.00</span></p>
-                        <p class="mb-1"><strong>Stock:</strong> <span th:text="${product.stock}">0</span></p>
-                        <p class="mb-0"><strong>Seller:</strong> <span th:text="${product.sellerName}">Seller Name</span></p>
-                    </div>
-                </div>
-                <div class="card-footer bg-white border-0 pt-0 pb-3 px-3">
-                    <a class="btn btn-outline-primary w-100" th:href="@{/products/{id}(id=${product.id})}">View Details</a>
-                </div>
+    <div class="product-grid" th:if="${!#lists.isEmpty(products)}">
+        <article class="product-card" th:each="product : ${products}">
+            <div class="product-card__media" th:if="${product.imageUrl != null and !#strings.isEmpty(product.imageUrl)}">
+                <img th:src="${product.imageUrl}" th:alt="${product.name}" class="product-card__image">
             </div>
-        </div>
+            <div class="product-card__media product-card__media--placeholder" th:if="${product.imageUrl == null or #strings.isEmpty(product.imageUrl)}">
+                ElectroMart
+            </div>
+            <div class="product-card__body">
+                <span class="category-pill" th:text="${product.categoryName}">Category</span>
+                <h2 class="product-card__title" th:text="${product.name}">Product Name</h2>
+                <p class="product-card__price" th:text="${product.price}">0.00</p>
+                <p class="product-card__stock">In stock: <span th:text="${product.stock}">0</span></p>
+                <a class="btn btn-primary product-card__cta w-100" th:href="@{/products/{id}(id=${product.id})}">View</a>
+            </div>
+        </article>
     </div>
 
-    <div class="alert alert-info shadow-sm border-0" th:if="${#lists.isEmpty(products)}">
+    <div class="alert empty-state" th:if="${#lists.isEmpty(products)}">
         No products matched your current search and category filter.
     </div>
 </div>
