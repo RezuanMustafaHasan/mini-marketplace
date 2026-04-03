@@ -16,7 +16,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.hasan.marketplace.dto.ProductRequest;
 import com.hasan.marketplace.dto.ProductResponse;
+import com.hasan.marketplace.entity.User;
 import com.hasan.marketplace.service.ProductService;
+import com.hasan.marketplace.service.UserService;
 import java.math.BigDecimal;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -35,6 +37,9 @@ class ProductControllerTest {
 
     @MockitoBean
     private ProductService productService;
+
+    @MockitoBean
+    private UserService userService;
 
     @Test
     void showAllProductsUsesKeywordSearchAndReturnsProductsView() throws Exception {
@@ -92,6 +97,24 @@ class ProductControllerTest {
         assertEquals(new BigDecimal("129.99"), capturedRequest.getPrice());
         assertEquals(12, capturedRequest.getStock());
         assertEquals("https://cdn.example.com/keyboard.png", capturedRequest.getImageUrl());
+    }
+
+    @Test
+    void createProductUsesAuthenticatedSellerIdWhenAvailable() throws Exception {
+        when(userService.findByEmail("seller@example.com")).thenReturn(User.builder().id(42L).build());
+
+        mockMvc.perform(post("/seller/products")
+                        .with(user("seller@example.com").roles("SELLER"))
+                        .with(csrf())
+                        .param("name", "Mechanical Keyboard")
+                        .param("description", "RGB keyboard")
+                        .param("price", "129.99")
+                        .param("stock", "12")
+                        .param("imageUrl", "https://cdn.example.com/keyboard.png"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/seller/products"));
+
+        verify(productService).createProduct(any(ProductRequest.class), org.mockito.Mockito.eq(42L));
     }
 
     @Test
