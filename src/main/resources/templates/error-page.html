@@ -11,14 +11,18 @@
 <div th:replace="~{fragments/navbar :: navbar}"></div>
 
 <div class="container page-shell">
-    <div class="row justify-content-center">
-        <div class="col-md-8 col-lg-6">
-            <div class="card auth-panel">
-                <div class="card-body p-4 text-center">
-                    <h1 class="h3 text-danger mb-3" th:text="${errorTitle}">Something went wrong</h1>
-                    <p class="mb-4 text-muted" th:text="${errorMessage}">An unexpected error occurred.</p>
-                    <a class="btn btn-primary" th:href="@{/products}">Back to Products</a>
-                </div>
+    <div class="auth-layout align-items-stretch">
+        <section class="auth-spotlight">
+            <span class="hero-showcase__eyebrow">Marketplace notice</span>
+            <h2>Something interrupted the flow.</h2>
+            <p>We kept the experience simple here too, so you can recover quickly and get back to shopping or managing your marketplace tasks.</p>
+        </section>
+
+        <div class="card auth-panel">
+            <div class="card-body p-4 text-center">
+                <h1 class="h3 text-danger mb-3" th:text="${errorTitle}">Something went wrong</h1>
+                <p class="mb-4 text-muted" th:text="${errorMessage}">An unexpected error occurred.</p>
+                <a class="btn btn-primary" th:href="@{/products}">Back to Products</a>
             </div>
         </div>
     </div>

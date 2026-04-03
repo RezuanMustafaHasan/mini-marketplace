@@ -11,60 +11,97 @@
 <div th:replace="~{fragments/navbar :: navbar}"></div>
 
 <div class="container page-shell">
-    <div class="surface-card overflow-hidden">
-        <div class="row g-0">
-            <div class="col-md-4 bg-white d-flex align-items-center justify-content-center p-4"
+    <div class="page-header">
+        <div>
+            <span class="page-header__eyebrow">Product spotlight</span>
+            <h1 th:text="${product.name}">Product Name</h1>
+            <p>Explore the listing details, verify stock, and move into checkout without leaving the premium product view.</p>
+        </div>
+        <a class="btn btn-outline-secondary" th:href="@{/products}">Back to Products</a>
+    </div>
+
+    <section class="detail-layout">
+        <div class="media-panel">
+            <div class="product-detail__image-wrap"
                  th:if="${product.imageUrl != null and !#strings.isEmpty(product.imageUrl)}">
-                <img th:src="${product.imageUrl}" alt="Product image" class="img-fluid rounded" style="max-height: 280px; object-fit: cover;">
+                <img th:src="${product.imageUrl}" th:alt="${product.name}">
             </div>
-            <div th:class="${product.imageUrl != null and !#strings.isEmpty(product.imageUrl)} ? 'col-md-8' : 'col-12'">
-                <div class="card-body p-4">
-                    <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-3">
-                        <div>
-                            <h2 class="card-title mb-1" th:text="${product.name}">Product Name</h2>
-                            <span class="category-pill" th:text="${product.categoryName}">Category</span>
-                        </div>
-                        <div class="text-lg-end">
-                            <h4 class="text-primary mb-1" th:text="${product.price}">0.00</h4>
-                            <p class="text-muted mb-0">Stock: <span th:text="${product.stock}">0</span></p>
-                        </div>
-                    </div>
-
-                    <p class="card-text mb-4"
-                       th:text="${product.description != null and !#strings.isEmpty(product.description) ? product.description : 'No description provided yet.'}">
-                        Product description
-                    </p>
-
-                    <div class="row g-3 mb-4">
-                        <div class="col-md-6">
-                            <div class="metric h-100">
-                                <p class="metric__label">Seller</p>
-                                <p class="metric__value" th:text="${product.sellerName}">Seller Name</p>
-                            </div>
-                        </div>
-                        <div class="col-md-6">
-                            <div class="metric h-100">
-                                <p class="metric__label">Category</p>
-                                <p class="metric__value" th:text="${product.categoryName}">Category</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="button-row">
-                        <a class="btn btn-secondary" th:href="@{/products}">Back to Products</a>
-                        <a th:if="${currentUser == null}" class="btn btn-outline-primary" th:href="@{/login}">
-                            Login to Order
-                        </a>
-                        <a th:if="${currentUser != null and (currentUser.role == 'BUYER' or currentUser.role == 'ADMIN')}"
-                           class="btn btn-primary"
-                           th:href="@{/checkout/{id}(id=${product.id})}">
-                            Buy Now
-                        </a>
-                    </div>
-                </div>
+            <div class="product-detail__placeholder"
+                 th:if="${product.imageUrl == null or #strings.isEmpty(product.imageUrl)}">
+                ElectroMart
             </div>
         </div>
-    </div>
+
+        <div class="surface-card product-summary">
+            <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+                <span class="category-pill" th:text="${product.categoryName}">Category</span>
+                <span class="product-card__badge position-static" th:text="${product.stock > 0 ? 'In stock' : 'Out of stock'}">In stock</span>
+            </div>
+
+            <div>
+                <p class="product-summary__price" th:text="${product.price}">0.00</p>
+                <p class="product-summary__copy"
+                   th:text="${product.description != null and !#strings.isEmpty(product.description) ? product.description : 'No description provided yet.'}">
+                    Product description
+                </p>
+            </div>
+
+            <div class="product-summary__meta">
+                <div class="product-summary__meta-item">
+                    <p class="product-summary__meta-label">Seller</p>
+                    <p class="product-summary__meta-value" th:text="${product.sellerName}">Seller Name</p>
+                </div>
+                <div class="product-summary__meta-item">
+                    <p class="product-summary__meta-label">Category</p>
+                    <p class="product-summary__meta-value" th:text="${product.categoryName}">Category</p>
+                </div>
+                <div class="product-summary__meta-item">
+                    <p class="product-summary__meta-label">Stock</p>
+                    <p class="product-summary__meta-value"><span th:text="${product.stock}">0</span> units available</p>
+                </div>
+            </div>
+
+            <div class="button-row">
+                <a class="btn btn-secondary" th:href="@{/products}">Back to Products</a>
+                <a th:if="${currentUser == null}" class="btn btn-outline-primary" th:href="@{/login}">
+                    Login to Order
+                </a>
+                <a th:if="${currentUser != null and (currentUser.role == 'BUYER' or currentUser.role == 'ADMIN')}"
+                   class="btn btn-primary"
+                   th:href="@{/checkout/{id}(id=${product.id})}">
+                    Buy Now
+                </a>
+            </div>
+        </div>
+    </section>
+
+    <section class="dashboard-strip mt-4">
+        <div class="stats-grid">
+            <article class="stat-card">
+                <span class="stat-card__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" width="22" height="22">
+                        <path d="M12 6v12M6 12h12" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                        <rect x="4" y="4" width="16" height="16" rx="3" stroke="currentColor" stroke-width="1.8"/>
+                    </svg>
+                </span>
+                <div>
+                    <p class="stat-card__label">Product category</p>
+                    <h2 class="stat-card__value" th:text="${product.categoryName}">Category</h2>
+                </div>
+            </article>
+            <article class="stat-card">
+                <span class="stat-card__icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" width="22" height="22">
+                        <path d="M5 12h14M12 5v14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+                    </svg>
+                </span>
+                <div>
+                    <p class="stat-card__label">Available stock</p>
+                    <h2 class="stat-card__value" th:text="${product.stock}">0</h2>
+                </div>
+            </article>
+        </div>
+    </section>
 </div>
 </body>
 </html>

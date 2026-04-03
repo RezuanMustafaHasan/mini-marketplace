@@ -62,11 +62,15 @@
 
         <div class="col-lg-8">
             <div class="table-shell">
+                <div class="table-shell__header">
+                    <div>
+                        <h2 class="section-title mb-0">Ordered Items</h2>
+                        <p>All products included in this purchase.</p>
+                    </div>
+                </div>
                 <div class="card-body">
-                    <h2 class="h5 mb-3">Ordered Items</h2>
-
                     <div class="table-responsive" th:if="${!#lists.isEmpty(order.items)}">
-                        <table class="table app-table align-middle">
+                        <table class="table app-table align-middle mb-0">
                             <thead>
                             <tr>
                                 <th>Product</th>

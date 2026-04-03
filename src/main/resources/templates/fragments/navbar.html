@@ -1,11 +1,14 @@
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <body>
-<nav th:fragment="navbar" class="navbar navbar-expand-lg brand-navbar sticky-top">
+<nav th:fragment="navbar" class="navbar navbar-expand-xl brand-navbar sticky-top">
     <div class="container">
-        <a class="navbar-brand fw-semibold d-flex align-items-center" th:href="@{/products}">
+        <a class="navbar-brand" th:href="@{/products}">
             <span class="navbar-brand__mark">EM</span>
-            ElectroMart
+            <span class="navbar-brand__meta">
+                <span class="navbar-brand__label">ElectroMart</span>
+                <span class="navbar-brand__subtext">Premium marketplace</span>
+            </span>
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNavbar"
                 aria-controls="mainNavbar" aria-expanded="false" aria-label="Toggle navigation">
@@ -13,16 +16,36 @@
         </button>
 
         <div class="collapse navbar-collapse" id="mainNavbar">
-            <ul class="navbar-nav align-items-lg-center me-auto mb-2 mb-lg-0 gap-lg-2">
+            <ul class="navbar-nav align-items-xl-center brand-navbar__nav mb-2 mb-xl-0">
                 <li class="nav-item" th:if="${currentUser == null}">
-                    <a class="nav-link" th:href="@{/}">Home</a>
+                    <a class="nav-link" th:href="@{/}">
+                        <span class="nav-link__icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+                                <path d="M4 11.5 12 5l8 6.5v7.5a1 1 0 0 1-1 1h-4.5v-5.5h-5V20H5a1 1 0 0 1-1-1v-7.5Z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+                            </svg>
+                        </span>
+                        <span>Home</span>
+                    </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link" th:href="@{/products}">Products</a>
+                    <a class="nav-link" th:href="@{/products}">
+                        <span class="nav-link__icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+                                <rect x="4" y="5" width="16" height="14" rx="3" stroke="currentColor" stroke-width="1.7"/>
+                                <path d="M8 10h8M8 14h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                            </svg>
+                        </span>
+                        <span>Products</span>
+                    </a>
                 </li>
                 <li class="nav-item dropdown">
                     <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
-                        Categories
+                        <span class="nav-link__icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+                                <path d="M6 7.5h12M6 12h12M6 16.5h8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                            </svg>
+                        </span>
+                        <span>Categories</span>
                     </a>
                     <ul class="dropdown-menu">
                         <li>
@@ -39,25 +62,62 @@
                     </ul>
                 </li>
                 <li class="nav-item" th:if="${currentUser != null and currentUser.role == 'BUYER'}">
-                    <a class="nav-link" th:href="@{/orders}">My Orders</a>
+                    <a class="nav-link" th:href="@{/orders}">
+                        <span class="nav-link__icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+                                <path d="M7 7.5h10M7 12h10M7 16.5h6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                                <rect x="4" y="4" width="16" height="16" rx="3" stroke="currentColor" stroke-width="1.7"/>
+                            </svg>
+                        </span>
+                        <span>Orders</span>
+                    </a>
                 </li>
                 <li class="nav-item" th:if="${currentUser != null and currentUser.role == 'SELLER'}">
-                    <a class="nav-link" th:href="@{/seller/dashboard}">Seller Dashboard</a>
+                    <a class="nav-link" th:href="@{/seller/dashboard}">
+                        <span class="nav-link__icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+                                <path d="M5 19V9.5M12 19V5M19 19v-7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                            </svg>
+                        </span>
+                        <span>Seller</span>
+                    </a>
                 </li>
                 <li class="nav-item" th:if="${currentUser != null and currentUser.role == 'ADMIN'}">
-                    <a class="nav-link" th:href="@{/admin}">Admin Dashboard</a>
-                </li>
-                <li class="nav-item" th:if="${currentUser != null and currentUser.role == 'ADMIN'}">
-                    <a class="nav-link" th:href="@{/admin/categories}">Manage Categories</a>
+                    <a class="nav-link" th:href="@{/admin}">
+                        <span class="nav-link__icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24" fill="none" width="18" height="18">
+                                <path d="M5 19V9.5M12 19V5M19 19v-7" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                            </svg>
+                        </span>
+                        <span>Admin</span>
+                    </a>
                 </li>
             </ul>
 
-            <div class="d-flex flex-column flex-lg-row align-items-lg-center gap-2 ms-lg-3" th:if="${currentUser == null}">
+            <div class="brand-navbar__search-wrap">
+                <form class="brand-search" method="get" th:action="@{/products}">
+                    <span class="brand-search__icon" aria-hidden="true">
+                        <svg viewBox="0 0 20 20" fill="none" width="18" height="18">
+                            <path d="M8.75 15.5a6.75 6.75 0 1 1 0-13.5 6.75 6.75 0 0 1 0 13.5Z" stroke="currentColor" stroke-width="1.7"/>
+                            <path d="m13.5 13.5 4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                        </svg>
+                    </span>
+                    <input class="brand-search__input" type="text" name="keyword" placeholder="Search products, categories, sellers">
+                    <button class="brand-search__submit" type="submit" aria-label="Search products">
+                        <svg viewBox="0 0 20 20" fill="none" width="16" height="16">
+                            <path d="M8.75 15.5a6.75 6.75 0 1 1 0-13.5 6.75 6.75 0 0 1 0 13.5Z" stroke="currentColor" stroke-width="1.7"/>
+                            <path d="m13.5 13.5 4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                        </svg>
+                    </button>
+                </form>
+            </div>
+
+            <div class="brand-navbar__actions" th:if="${currentUser == null}">
                 <a class="btn btn-outline-secondary btn-sm" th:href="@{/login}">Login</a>
                 <a class="btn btn-primary btn-sm" th:href="@{/register}">Register</a>
             </div>
 
-            <div class="d-flex flex-column flex-lg-row align-items-lg-center gap-2 ms-lg-3" th:if="${currentUser != null}">
+            <div class="brand-navbar__actions" th:if="${currentUser != null}">
                 <div class="nav-user-summary">
                     <div class="nav-user-summary__name" th:text="${currentUser.fullName}">User Name</div>
                     <div class="nav-user-summary__role" th:text="${currentUser.role}">ROLE</div>
