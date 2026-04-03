@@ -9,6 +9,7 @@ import com.hasan.marketplace.service.ProductService;
 import com.hasan.marketplace.service.UserService;
 import java.util.Collections;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -24,9 +25,11 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RequestMapping
 public class OrderController {
 
+    private static final Long TEMP_BUYER_ID = 2L;
+
     private final ProductService productService;
     private final OrderService orderService;
-    private final UserService userService;
+    private final ObjectProvider<UserService> userServiceProvider;
 
     @GetMapping("/checkout/{productId}")
     public String showCheckoutPage(@PathVariable Long productId, Model model) {
@@ -63,9 +66,18 @@ public class OrderController {
 
     private Long getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserService userService = userServiceProvider.getIfAvailable();
+
+        if (authentication == null || userService == null || !authentication.isAuthenticated()) {
+            return TEMP_BUYER_ID;
+        }
+
         String email = authentication.getName();
+        if (email == null || "anonymousUser".equals(email)) {
+            return TEMP_BUYER_ID;
+        }
+
         User user = userService.findByEmail(email);
-        return user.getId();
+        return user != null && user.getId() != null ? user.getId() : TEMP_BUYER_ID;
     }
 }
-

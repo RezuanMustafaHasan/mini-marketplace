@@ -7,6 +7,7 @@ import com.hasan.marketplace.service.ProductService;
 import com.hasan.marketplace.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -24,8 +25,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 @RequestMapping
 public class ProductController {
 
+    private static final Long TEMP_SELLER_ID = 1L;
+
     private final ProductService productService;
-    private final UserService userService;
+    private final ObjectProvider<UserService> userServiceProvider;
 
     @GetMapping("/products")
     public String showAllProducts(@RequestParam(required = false) String keyword, Model model) {
@@ -110,9 +113,18 @@ public class ProductController {
 
     private Long getCurrentUserId() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        UserService userService = userServiceProvider.getIfAvailable();
+
+        if (authentication == null || userService == null || !authentication.isAuthenticated()) {
+            return TEMP_SELLER_ID;
+        }
+
         String email = authentication.getName();
+        if (email == null || "anonymousUser".equals(email)) {
+            return TEMP_SELLER_ID;
+        }
+
         User user = userService.findByEmail(email);
-        return user.getId();
+        return user != null && user.getId() != null ? user.getId() : TEMP_SELLER_ID;
     }
 }
-
