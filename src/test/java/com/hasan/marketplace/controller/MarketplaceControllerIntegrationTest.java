@@ -31,12 +31,24 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class MarketplaceControllerIntegrationTest {
+
+    @DynamicPropertySource
+    static void registerTestProperties(DynamicPropertyRegistry registry) {
+        // Force the embedded test database even when CI exports SPRING_DATASOURCE_* env vars.
+        registry.add("spring.datasource.url",
+                () -> "jdbc:h2:mem:marketplace_test;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE");
+        registry.add("spring.datasource.driver-class-name", () -> "org.h2.Driver");
+        registry.add("spring.datasource.username", () -> "sa");
+        registry.add("spring.datasource.password", () -> "");
+    }
 
     @Autowired
     private MockMvc mockMvc;
