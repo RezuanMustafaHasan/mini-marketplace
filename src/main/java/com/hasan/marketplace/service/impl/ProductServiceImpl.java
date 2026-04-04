@@ -10,6 +10,7 @@ import com.hasan.marketplace.exception.ResourceNotFoundException;
 import com.hasan.marketplace.exception.UnauthorizedActionException;
 import com.hasan.marketplace.repository.CategoryRepository;
 import com.hasan.marketplace.repository.ProductRepository;
+import com.hasan.marketplace.repository.ProductReviewRepository;
 import com.hasan.marketplace.repository.UserRepository;
 import com.hasan.marketplace.service.ProductService;
 import java.util.List;
@@ -25,6 +26,7 @@ public class ProductServiceImpl implements ProductService {
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
     private final CategoryRepository categoryRepository;
+    private final ProductReviewRepository productReviewRepository;
 
     @Override
     @Transactional
@@ -67,6 +69,7 @@ public class ProductServiceImpl implements ProductService {
     public void deleteProduct(Long productId, Long sellerId) {
         Product product = getProductByIdOrThrow(productId);
         validateOwnership(product, sellerId);
+        productReviewRepository.deleteByProductId(productId);
         productRepository.delete(product);
     }
 
@@ -185,6 +188,9 @@ public class ProductServiceImpl implements ProductService {
             response.setSellerId(product.getSeller().getId());
             response.setSellerName(product.getSeller().getFullName());
         }
+
+        response.setAverageRating(productReviewRepository.findAverageRatingByProductId(product.getId()));
+        response.setReviewCount(productReviewRepository.countByProductId(product.getId()));
 
         return response;
     }

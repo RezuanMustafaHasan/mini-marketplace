@@ -1,5 +1,6 @@
 package com.hasan.marketplace.controller;
 
+import com.hasan.marketplace.dto.HomeCarouselSlideRequest;
 import com.hasan.marketplace.dto.CategoryRequest;
 import com.hasan.marketplace.exception.InvalidCategoryException;
 import com.hasan.marketplace.service.AdminService;
@@ -56,6 +57,15 @@ public class AdminController {
         return "admin-categories";
     }
 
+    @GetMapping("/home-slides")
+    public String showHomeSlides(Model model) {
+        if (!model.containsAttribute("slideForm")) {
+            model.addAttribute("slideForm", HomeCarouselSlideRequest.builder().displayOrder(1).build());
+        }
+        model.addAttribute("slides", adminService.getAllHomeSlides());
+        return "admin-home-slides";
+    }
+
     @PostMapping("/categories")
     public String createCategory(@Valid @ModelAttribute("categoryForm") CategoryRequest request,
                                  BindingResult bindingResult,
@@ -78,10 +88,32 @@ public class AdminController {
         return "redirect:/admin/categories";
     }
 
+    @PostMapping("/home-slides")
+    public String createHomeSlide(@Valid @ModelAttribute("slideForm") HomeCarouselSlideRequest request,
+                                  BindingResult bindingResult,
+                                  Model model,
+                                  RedirectAttributes redirectAttributes) {
+        if (bindingResult.hasErrors()) {
+            model.addAttribute("slides", adminService.getAllHomeSlides());
+            return "admin-home-slides";
+        }
+
+        adminService.createHomeSlide(request);
+        redirectAttributes.addFlashAttribute("successMessage", "Homepage slide added successfully.");
+        return "redirect:/admin/home-slides";
+    }
+
     @PostMapping("/categories/delete/{id}")
     public String deleteCategory(@PathVariable Long id, RedirectAttributes redirectAttributes) {
         categoryService.deleteCategory(id);
         redirectAttributes.addFlashAttribute("successMessage", "Category deleted successfully.");
         return "redirect:/admin/categories";
+    }
+
+    @PostMapping("/home-slides/delete/{id}")
+    public String deleteHomeSlide(@PathVariable Long id, RedirectAttributes redirectAttributes) {
+        adminService.deleteHomeSlide(id);
+        redirectAttributes.addFlashAttribute("successMessage", "Homepage slide deleted successfully.");
+        return "redirect:/admin/home-slides";
     }
 }
