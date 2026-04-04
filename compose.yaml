@@ -1,0 +1,30 @@
+services:
+  db:
+    image: postgres:18
+    environment:
+      POSTGRES_DB: marketplace_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 12345678
+    volumes:
+      - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d marketplace_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/marketplace_db
+      DB_USERNAME: postgres
+      DB_PASSWORD: 12345678
+      PORT: 8080
+    ports:
+      - "8080:8080"
+
+volumes:
+  postgres_data:
