@@ -15,6 +15,7 @@ import com.hasan.marketplace.entity.User;
 import com.hasan.marketplace.exception.ResourceNotFoundException;
 import com.hasan.marketplace.repository.CategoryRepository;
 import com.hasan.marketplace.repository.ProductRepository;
+import com.hasan.marketplace.repository.ProductReviewRepository;
 import com.hasan.marketplace.repository.UserRepository;
 import java.math.BigDecimal;
 import java.util.List;
@@ -37,6 +38,9 @@ class ProductServiceImplTest {
     @Mock
     private CategoryRepository categoryRepository;
 
+    @Mock
+    private ProductReviewRepository productReviewRepository;
+
     @InjectMocks
     private ProductServiceImpl productService;
 
@@ -57,6 +61,8 @@ class ProductServiceImplTest {
             product.setId(10L);
             return product;
         });
+        when(productReviewRepository.findAverageRatingByProductId(any())).thenReturn(null);
+        when(productReviewRepository.countByProductId(any())).thenReturn(0L);
 
         ProductResponse response = productService.createProduct(request, 1L);
 
@@ -86,6 +92,8 @@ class ProductServiceImplTest {
         when(productRepository.findAllByOrderByIdDesc()).thenReturn(List.of(
                 Product.builder().id(1L).name("Keyboard").seller(User.builder().id(1L).fullName("Seller").build()).build()
         ));
+        when(productReviewRepository.findAverageRatingByProductId(any())).thenReturn(null);
+        when(productReviewRepository.countByProductId(any())).thenReturn(0L);
 
         List<ProductResponse> products = productService.searchProducts("   ", null);
 

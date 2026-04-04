@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 public interface CustomerOrderRepository extends JpaRepository<CustomerOrder, Long> {
 
@@ -23,4 +25,13 @@ public interface CustomerOrderRepository extends JpaRepository<CustomerOrder, Lo
     List<CustomerOrder> findDistinctByItemsProductSellerIdOrderByOrderDateDesc(Long sellerId);
 
     long countDistinctByItemsProductSellerId(Long sellerId);
+
+    @Query("""
+            select case when count(customerOrder) > 0 then true else false end
+            from CustomerOrder customerOrder
+            join customerOrder.items item
+            where customerOrder.buyer.id = :buyerId
+            and item.product.id = :productId
+            """)
+    boolean existsByBuyerIdAndProductId(@Param("buyerId") Long buyerId, @Param("productId") Long productId);
 }
