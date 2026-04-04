@@ -16,6 +16,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import com.hasan.marketplace.dto.ProductResponse;
 import com.hasan.marketplace.service.CategoryService;
 import com.hasan.marketplace.service.ProductService;
+import com.hasan.marketplace.service.ReviewService;
 import com.hasan.marketplace.service.UserService;
 import java.util.List;
 import org.junit.jupiter.api.Test;
@@ -37,6 +38,9 @@ class ProductControllerTest {
 
     @MockitoBean
     private CategoryService categoryService;
+
+    @MockitoBean
+    private ReviewService reviewService;
 
     @MockitoBean
     private UserService userService;
