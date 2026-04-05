@@ -283,11 +283,17 @@ body.app-body {
     width: 2.4rem;
     height: 2.4rem;
     border-radius: 0.9rem;
-    background: linear-gradient(135deg, var(--primary), #ff8d4d 58%, var(--accent-gold));
-    color: #fff;
-    box-shadow: 0 10px 24px rgba(248, 86, 6, 0.3);
-    font-size: 0.86rem;
-    font-weight: 700;
+    padding: 0.28rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, 0.32);
+}
+
+.brand-footer__logo {
+    width: 100%;
+    height: 100%;
+    border-radius: 0.65rem;
+    object-fit: contain;
 }
 
 .brand-footer__title {
@@ -778,11 +784,17 @@ body.app-body {
     width: 2.5rem;
     height: 2.5rem;
     border-radius: 0.95rem;
-    background: linear-gradient(135deg, var(--primary), #ff8d4d 58%, var(--accent-gold));
-    color: #fff;
-    box-shadow: 0 12px 28px rgba(248, 86, 6, 0.28);
-    font-size: 0.92rem;
-    font-weight: 700;
+    padding: 0.3rem;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.08);
+    box-shadow: 0 12px 28px rgba(15, 23, 42, 0.3);
+}
+
+.navbar-brand__logo {
+    width: 100%;
+    height: 100%;
+    border-radius: 0.7rem;
+    object-fit: contain;
 }
 
 .navbar-brand__meta {

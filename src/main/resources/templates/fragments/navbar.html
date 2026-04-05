@@ -4,7 +4,9 @@
 <nav th:fragment="navbar" class="navbar navbar-expand-xl brand-navbar sticky-top">
     <div class="container">
         <a class="navbar-brand" th:href="@{/}">
-            <span class="navbar-brand__mark">EM</span>
+            <span class="navbar-brand__mark">
+                <img class="navbar-brand__logo" th:src="@{/images/logo.png}" src="/images/logo.png" alt="ElectroMart logo">
+            </span>
             <span class="navbar-brand__meta">
                 <span class="navbar-brand__label">ElectroMart</span>
                 <span class="navbar-brand__subtext">Premium marketplace</span>
