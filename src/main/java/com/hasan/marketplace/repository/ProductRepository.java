@@ -25,10 +25,24 @@ public interface ProductRepository extends JpaRepository<Product, Long> {
     List<Product> findByNameContainingIgnoreCaseOrderByIdDesc(String keyword);
 
     @EntityGraph(attributePaths = {"seller", "category"})
+    List<Product> findByNameContainingIgnoreCaseOrSeller_FullNameContainingIgnoreCaseOrderByIdDesc(
+            String productKeyword,
+            String sellerKeyword
+    );
+
+    @EntityGraph(attributePaths = {"seller", "category"})
     List<Product> findByCategoryIdOrderByIdDesc(Long categoryId);
 
     @EntityGraph(attributePaths = {"seller", "category"})
     List<Product> findByNameContainingIgnoreCaseAndCategoryIdOrderByIdDesc(String keyword, Long categoryId);
+
+    @EntityGraph(attributePaths = {"seller", "category"})
+    List<Product> findByCategoryIdAndNameContainingIgnoreCaseOrCategoryIdAndSeller_FullNameContainingIgnoreCaseOrderByIdDesc(
+            Long categoryIdForProductName,
+            String productKeyword,
+            Long categoryIdForSellerName,
+            String sellerKeyword
+    );
 
     List<Product> findByCategoryIsNull();
 

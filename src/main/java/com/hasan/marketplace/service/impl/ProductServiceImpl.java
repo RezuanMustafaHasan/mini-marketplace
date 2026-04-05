@@ -113,12 +113,19 @@ public class ProductServiceImpl implements ProductService {
         } else if (normalizedKeyword == null) {
             products = productRepository.findByCategoryIdOrderByIdDesc(categoryId);
         } else if (categoryId == null) {
-            products = productRepository.findByNameContainingIgnoreCaseOrderByIdDesc(normalizedKeyword);
-        } else {
-            products = productRepository.findByNameContainingIgnoreCaseAndCategoryIdOrderByIdDesc(
+            products = productRepository
+                .findByNameContainingIgnoreCaseOrSeller_FullNameContainingIgnoreCaseOrderByIdDesc(
                     normalizedKeyword,
-                    categoryId
-            );
+                    normalizedKeyword
+                );
+        } else {
+            products = productRepository
+                .findByCategoryIdAndNameContainingIgnoreCaseOrCategoryIdAndSeller_FullNameContainingIgnoreCaseOrderByIdDesc(
+                    categoryId,
+                    normalizedKeyword,
+                    categoryId,
+                    normalizedKeyword
+                );
         }
 
         return products

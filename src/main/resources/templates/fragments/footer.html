@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<body>
+<footer th:fragment="footer" class="brand-footer">
+    <div class="container brand-footer__inner">
+        <div class="brand-footer__grid">
+            <section class="brand-footer__intro">
+                <a class="brand-footer__brand" th:href="@{/}">
+                    <span class="brand-footer__mark">EM</span>
+                    <div>
+                        <p class="brand-footer__title">ElectroMart</p>
+                        <p class="brand-footer__subtitle">Curated tech marketplace for daily essentials</p>
+                    </div>
+                </a>
+                <p class="brand-footer__text">
+                    Shop trusted electronics with cleaner discovery, secure checkout flows, and role-based dashboards for buyers, sellers, and admins.
+                </p>
+                <div class="brand-footer__chips" aria-label="Platform highlights">
+                    <span>Fast discovery</span>
+                    <span>Verified sellers</span>
+                    <span>Secure ordering</span>
+                </div>
+            </section>
+
+            <nav class="brand-footer__column" aria-label="Marketplace links">
+                <p class="brand-footer__heading">Marketplace</p>
+                <a th:href="@{/}">Home</a>
+                <a th:href="@{/products}">Products</a>
+                <a th:href="@{/products}">Top categories</a>
+                <a th:href="@{/products}">Featured picks</a>
+            </nav>
+
+            <nav class="brand-footer__column" aria-label="Account links">
+                <p class="brand-footer__heading">Account</p>
+                <a th:if="${currentUser == null}" th:href="@{/login}">Login</a>
+                <a th:if="${currentUser == null}" th:href="@{/register}">Register</a>
+                <a th:if="${currentUser != null and currentUser.role == 'BUYER'}" th:href="@{/orders}">My orders</a>
+                <a th:if="${currentUser != null and currentUser.role == 'SELLER'}" th:href="@{/seller/dashboard}">Seller dashboard</a>
+                <a th:if="${currentUser != null and currentUser.role == 'ADMIN'}" th:href="@{/admin}">Admin panel</a>
+                <a th:if="${currentUser != null}" th:href="@{/products}">Continue shopping</a>
+            </nav>
+
+            <section class="brand-footer__column brand-footer__column--contact" aria-label="Support details">
+                <p class="brand-footer__heading">Support</p>
+                <p>Sat-Thu, 9:00 AM - 10:00 PM</p>
+                <p>Email: support@electromart.local</p>
+                <p>Phone: +880 9612-345678</p>
+                <p>Address: Level 4, Future Tech Avenue, Dhaka</p>
+            </section>
+        </div>
+
+        <div class="brand-footer__bottom">
+            <p class="brand-footer__copy">
+                &copy; <span th:text="${#dates.format(#dates.createNow(), 'yyyy')}">2026</span> ElectroMart. All rights reserved.
+            </p>
+
+            <div class="brand-footer__social" aria-label="Social links">
+                <a href="#" aria-label="ElectroMart on Facebook">
+                    <svg viewBox="0 0 24 24" fill="none" width="14" height="14" aria-hidden="true">
+                        <path d="M13.5 21v-7h2.4l.4-3h-2.8V9.1c0-.9.3-1.5 1.5-1.5h1.4V4.9c-.2 0-1.1-.1-2-.1-2 0-3.3 1.2-3.3 3.5V11H9v3h2.1v7h2.4Z" fill="currentColor"/>
+                    </svg>
+                </a>
+                <a href="#" aria-label="ElectroMart on Instagram">
+                    <svg viewBox="0 0 24 24" fill="none" width="14" height="14" aria-hidden="true">
+                        <rect x="4" y="4" width="16" height="16" rx="5" stroke="currentColor" stroke-width="1.8"/>
+                        <circle cx="12" cy="12" r="3.6" stroke="currentColor" stroke-width="1.8"/>
+                        <circle cx="17" cy="7" r="1" fill="currentColor"/>
+                    </svg>
+                </a>
+                <a href="#" aria-label="ElectroMart on YouTube">
+                    <svg viewBox="0 0 24 24" fill="none" width="14" height="14" aria-hidden="true">
+                        <rect x="3" y="6" width="18" height="12" rx="4" stroke="currentColor" stroke-width="1.8"/>
+                        <path d="m10 9.5 5 2.5-5 2.5V9.5Z" fill="currentColor"/>
+                    </svg>
+                </a>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.7/dist/js/bootstrap.bundle.min.js"></script>
+</footer>
+</body>
+</html>
