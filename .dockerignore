@@ -6,3 +6,6 @@ target
 HELP.md
 Dockerfile
 .dockerignore
+.env
+.env.*
+!.env.example

@@ -30,6 +30,13 @@ public class CategoryServiceImpl implements CategoryService {
     }
 
     @Override
+    public CategoryResponse getCategoryById(Long categoryId) {
+        Category category = categoryRepository.findById(categoryId)
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + categoryId));
+        return mapToResponse(category);
+    }
+
+    @Override
     @Transactional
     public CategoryResponse createCategory(CategoryRequest request) {
         String normalizedName = normalizeName(request.getName());
@@ -42,6 +49,24 @@ public class CategoryServiceImpl implements CategoryService {
                 .name(normalizedName)
                 .build();
 
+        return mapToResponse(categoryRepository.save(category));
+    }
+
+    @Override
+    @Transactional
+    public CategoryResponse updateCategory(Long categoryId, CategoryRequest request) {
+        Category category = categoryRepository.findById(categoryId)
+                .orElseThrow(() -> new ResourceNotFoundException("Category not found with id: " + categoryId));
+
+        String normalizedName = normalizeName(request.getName());
+
+        categoryRepository.findByNameIgnoreCase(normalizedName)
+                .filter(existing -> !existing.getId().equals(categoryId))
+                .ifPresent(existing -> {
+                    throw new InvalidCategoryException("Category already exists: " + normalizedName);
+                });
+
+        category.setName(normalizedName);
         return mapToResponse(categoryRepository.save(category));
     }
 
