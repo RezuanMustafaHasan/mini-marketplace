@@ -186,6 +186,3 @@ Typical flow:
 - Render builds and deploys new version
 - Runtime env vars are supplied from Render dashboard (not from local `.env`)
 
-## License
-
-Add a license file if you plan to open-source this repository.
