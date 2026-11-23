@@ -7,10 +7,26 @@ Users can browse products, place orders, and manage activity based on role:
 - Seller: manage products, view seller orders, update order status
 - Admin: manage users, products, orders, categories, and home slides
 
-## Live Deployment
+## Quick start with Docker Compose
 
-Production URL:
-- https://mini-marketplace-26bl.onrender.com
+Requires Docker Engine or Docker Desktop with Compose.
+
+```bash
+cp .env.example .env
+```
+
+Set `DB_PASSWORD` and `ADMIN_PASSWORD` in `.env` before starting the services.
+
+```bash
+docker compose up --build -d
+docker compose ps
+```
+
+Open [the catalog](http://localhost:8080). Register a buyer or seller account, or
+sign in as admin using the email and password from `.env`. Stop the stack with
+`docker compose down`.
+
+[Render deployment link](https://mini-marketplace-26bl.onrender.com)
 
 ## Architecture Diagram
 
@@ -24,7 +40,7 @@ Production URL:
 
 - Backend: Java 17, Spring Boot, Spring Security, Spring Data JPA
 - Frontend: Thymeleaf, Bootstrap 5, custom CSS
-- Database: PostgreSQL (H2 for tests)
+- Database: PostgreSQL, H2 for local integration tests
 - Build Tool: Maven Wrapper
 - Containerization: Docker, Docker Compose
 - CI: GitHub Actions
@@ -93,96 +109,28 @@ Base path examples below are from controllers in `controller/api`.
 - `GET /admin/categories` : category management view
 - `GET /admin/home-slides` : home carousel management view
 
-## Environment Variables
+## Run without Docker
 
-Create local env file from template:
-
-```bash
-cp .env.example .env
-```
-
-PowerShell alternative:
-
-```powershell
-Copy-Item .env.example .env
-```
-
-Important runtime variables:
-- `DB_URL` or `SPRING_DATASOURCE_URL`
-- `DB_USERNAME` or `SPRING_DATASOURCE_USERNAME`
-- `DB_PASSWORD` or `SPRING_DATASOURCE_PASSWORD`
-- `ADMIN_PASSWORD`
-
-Optional:
-- `ADMIN_EMAIL`
-- `PORT`
-- `JPA_DDL`
-- `SECURITY_LOG_LEVEL`
-
-Notes:
-- `.env` is ignored by git.
-- Use Render dashboard environment settings in production.
-
-## Run Instructions
-
-### Option 1: Local (Maven)
-
-Prerequisites:
-- Java 17+
-- PostgreSQL running
-
-Steps:
+With Java 17 and a local PostgreSQL database, export `DB_URL`, `DB_USERNAME`,
+`DB_PASSWORD`, and `ADMIN_PASSWORD` to your shell. You can also set
+`ADMIN_EMAIL` (defaults to `admin@marketplace.com`). Maven does not load the
+Compose `.env` file. PostgreSQL must already have the database in `DB_URL`.
 
 ```bash
-./mvnw clean verify
 ./mvnw spring-boot:run
 ```
 
-App starts at:
-- `http://localhost:8080`
+Open [the catalog](http://localhost:8080). On Windows, use `mvnw.cmd` in place of
+`./mvnw`.
 
-### Option 2: Docker Compose
-
-Prerequisites:
-- Docker Desktop / Docker Engine
-
-Steps:
-
-```bash
-docker compose up --build -d
-docker compose ps
-```
-
-Stop:
-
-```bash
-docker compose down
-```
-
-## CI/CD Explanation
-
-### CI (GitHub Actions)
-
-Workflow file:
-- `.github/workflows/ci.yml`
-
-Pipeline behavior:
-- Triggers on push to `main` and `develop`, and pull requests to `main`
-- Spins up PostgreSQL service container
-- Sets test datasource env vars
-- Runs:
+## Tests and CI
 
 ```bash
 ./mvnw clean verify
 ```
 
-### CD (Render)
+The suite covers authentication, products, and order workflows at the controller,
+service, and integration levels. [GitHub Actions](.github/workflows/ci.yml)
+runs the Maven verification job. See the [test sources](src/test) for coverage.
 
-Render handles deployment of this project at:
-- https://mini-marketplace-26bl.onrender.com
-
-Typical flow:
-- Code pushed to connected branch
-- Render builds and deploys new version
-- Runtime env vars are supplied from Render dashboard (not from local `.env`)
-
+The production deployment uses runtime environment variables configured in Render.
